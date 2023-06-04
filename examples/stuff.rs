@@ -4,6 +4,7 @@ use rack::{
     module::Port,
     modules::{
         audio::{Audio, FrameInput},
+        keyboard::Keyboard,
         oscillator::{FrameOutput, Oscillator},
         scope::{Scope, ScopeInput},
     },
@@ -15,6 +16,7 @@ fn main() {
     let oscil = app.rack.add_module_typed::<Oscillator>();
     let audio = app.rack.add_module_typed::<Audio>();
     let scope = app.rack.add_module_typed::<Scope>();
+    let keyboard = app.rack.add_module_typed::<Keyboard>();
 
     // app.rack.get_module_mut(&b).unwrap().volume = 0.0;
     // app.rack.get_module_mut(&c).unwrap().volume = 0.0;

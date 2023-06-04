@@ -15,7 +15,10 @@ use crate::{
     },
     io::{ConnectResult, Io, PortHandle},
     module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
-    modules::{audio::Audio, ops::Operation, oscillator::Oscillator, scope::Scope, value::Value},
+    modules::{
+        audio::Audio, keyboard::Keyboard, ops::Operation, oscillator::Oscillator, scope::Scope,
+        value::Value,
+    },
 };
 
 pub struct Rack {
@@ -37,6 +40,7 @@ impl Default for Rack {
         new.init_module::<Operation<f32>>();
         new.init_module::<Value<f32>>();
         new.init_module::<Scope>();
+        new.init_module::<Keyboard>();
 
         new
     }
