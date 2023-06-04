@@ -9,7 +9,7 @@ const SCALE: f32 = 1.5;
 
 pub struct App {
     pub rack: Rack,
-    output: Option<Output>,
+    output: Output,
 }
 
 impl Default for App {
@@ -50,47 +50,35 @@ impl eframe::App for App {
                 ui.label(env!("CARGO_PKG_NAME"));
                 ui.separator();
 
-                if let Some(output) = &mut self.output {
-                    output.show(ui);
-                    if !output.is_valid() {
-                        self.output = None;
-                    }
-                } else {
-                    ui.label("⚠ could not initialize audio output!");
-                    if ui.button("retry").clicked() {
-                        self.output = Output::new();
-                    }
-                }
+                self.output.show(ui);
                 ui.separator();
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.rack.show(
-                ui,
-                self.output
-                    .as_ref()
-                    .map(|output| output.config.sample_rate.0)
-                    .unwrap_or_default(),
-            );
+            self.rack
+                .show(ui, self.output.sample_rate().unwrap_or_default());
         });
 
-        if let Some(output) = &mut self.output {
-            while !output.is_full() {
-                let outputs = self.rack.process(output.config.sample_rate.0);
+        while !self.output.is_full() {
+            let outputs = self
+                .rack
+                .process(self.output.sample_rate().unwrap_or_default());
 
-                if outputs.len() > 0 {
-                    for frame in outputs {
-                        output.push_frame(frame)
-                    }
-                } else {
-                    output.push_frame(Frame::ZERO)
+            if outputs.len() > 0 {
+                for frame in outputs {
+                    self.output.push_frame(frame)
                 }
-
-                output
-                    .commit_frames()
-                    .expect("ringbuffer should not overflow using output.is_full");
+            } else {
+                self.output.push_frame(Frame::ZERO)
             }
+
+            self.output
+                .instance
+                .as_mut()
+                .unwrap()
+                .commit_frames()
+                .expect("ringbuffer should not overflow using output.is_full");
         }
 
         ctx.request_repaint();

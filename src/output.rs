@@ -14,45 +14,23 @@ use crate::{damper::LinearDamper, frame::Frame};
 
 type RingProducer = Producer<Frame, Arc<HeapRb<Frame>>>;
 
-pub struct Output {
+pub struct StreamInstance {
     _stream: Stream,
     pub config: StreamConfig,
     producer: RingProducer,
-    current_frames: Vec<Frame>,
-    volume: f32,
-    paused: bool,
-    damper: LinearDamper<f32>,
     is_err: Arc<AtomicBool>,
+    current_frames: Vec<Frame>,
 }
 
-impl Output {
-    fn fetch_device() -> Option<Device> {
-        let host = cpal::default_host();
-        host.default_output_device()
-    }
-
-    fn fetch_stream_config(device: &Device) -> Option<StreamConfig> {
-        Some(
-            device
-                .supported_output_configs()
-                .ok()?
-                .next()?
-                .with_max_sample_rate()
-                .config(),
-        )
-    }
-
+impl StreamInstance {
     fn ringbuf_size(config: &StreamConfig, duration: Duration) -> usize {
         (config.sample_rate.0 as f32 * duration.as_secs_f32()) as usize
     }
 
-    fn create_stream(
-        device: &Device,
-        config: &StreamConfig,
-    ) -> Option<(Stream, RingProducer, Arc<AtomicBool>)> {
+    fn new(device: Device, config: StreamConfig) -> Option<Self> {
         let (producer, mut consumer) = {
             let duration = Duration::from_secs_f32(0.15);
-            let rb: _ = HeapRb::<Frame>::new(Self::ringbuf_size(config, duration));
+            let rb: _ = HeapRb::<Frame>::new(Self::ringbuf_size(&config, duration));
             rb.split()
         };
 
@@ -80,32 +58,25 @@ impl Output {
 
         stream.play().ok()?;
 
-        Some((stream, producer, is_err))
-    }
-
-    pub fn new() -> Option<Self> {
-        let device = Self::fetch_device()?;
-        let config = Self::fetch_stream_config(&device)?;
-        let (stream, producer, is_err) = Self::create_stream(&device, &config)?;
-
         Some(Self {
             _stream: stream,
-            damper: LinearDamper::new(0.0001, 0.0),
             config,
             producer,
-            current_frames: Vec::new(),
-            volume: 0.5,
-            paused: true,
             is_err,
+            current_frames: Vec::new(),
         })
+    }
+
+    pub fn is_invalid(&self) -> bool {
+        self.is_err.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn is_full(&self) -> bool {
         self.producer.is_full()
     }
 
-    pub fn push_frame(&mut self, value: Frame) {
-        self.current_frames.push(value)
+    pub fn push_frame(&mut self, value: Frame, volume: f32) {
+        self.current_frames.push(value * volume)
     }
 
     pub fn commit_frames(&mut self) -> Result<(), ()> {
@@ -115,34 +86,112 @@ impl Output {
             new += frame;
         }
 
-        let ampl = if self.paused {
-            self.damper.frame(0.0)
-        } else {
-            self.damper.frame(self.volume)
+        self.producer.push(new).map_err(|_| ())
+    }
+}
+
+pub struct Output {
+    pub instance: Option<StreamInstance>,
+    volume: f32,
+    paused: bool,
+    damper: LinearDamper<f32>,
+}
+
+impl Output {
+    fn fetch_device() -> Option<Device> {
+        let host = cpal::default_host();
+        host.default_output_device()
+    }
+
+    fn fetch_stream_config(device: &Device) -> Option<StreamConfig> {
+        Some(
+            device
+                .supported_output_configs()
+                .ok()?
+                .next()?
+                .with_max_sample_rate()
+                .config(),
+        )
+    }
+
+    pub fn new() -> Self {
+        let mut new = Self {
+            instance: None,
+            damper: LinearDamper::new(0.0001, 0.0),
+            volume: 0.5,
+            paused: true,
         };
 
-        self.producer.push(new * ampl).map_err(|_| ())
+        new.init_instance();
+
+        new
+    }
+
+    pub fn is_full(&self) -> bool {
+        if let Some(instance) = &self.instance {
+            instance.is_full()
+        } else {
+            true
+        }
+    }
+
+    pub fn push_frame(&mut self, value: Frame) {
+        if let Some(instance) = &mut self.instance {
+            let ampl = if self.paused {
+                self.damper.frame(0.0)
+            } else {
+                self.damper.frame(self.volume)
+            };
+
+            instance.push_frame(value, ampl)
+        }
+    }
+
+    fn init_instance(&mut self) {
+        let Some(device) = Self::fetch_device() else {
+            return
+        };
+        let Some(config) = Self::fetch_stream_config(&device) else {
+            return
+        };
+        self.instance = StreamInstance::new(device, config);
+    }
+
+    pub fn sample_rate(&self) -> Option<u32> {
+        let instance = self.instance.as_ref()?;
+        Some(instance.config.sample_rate.0)
     }
 
     pub fn show(&mut self, ui: &mut Ui) {
-        ui.selectable_value(&mut self.paused, false, "▶");
-        ui.selectable_value(&mut self.paused, true, "⏸");
-        ui.add(
-            egui::DragValue::new(&mut self.volume)
-                .speed(0.01)
-                .clamp_range(0.0..=1.0),
-        )
-        .on_hover_text_at_pointer("volume");
-        ui.separator();
-        ui.label(RichText::new(format!("{}", self.config.sample_rate.0)).monospace())
-            .on_hover_text_at_pointer("sample rate");
-        ui.separator();
+        if self
+            .instance
+            .as_ref()
+            .is_some_and(|instance| instance.is_invalid())
+        {
+            self.instance = None;
+        }
 
-        ui.label(RichText::new(format!("{}", self.config.channels)).monospace())
-            .on_hover_text_at_pointer("channels");
-    }
+        if let Some(instance) = &mut self.instance {
+            ui.selectable_value(&mut self.paused, false, "▶");
+            ui.selectable_value(&mut self.paused, true, "⏸");
+            ui.add(
+                egui::DragValue::new(&mut self.volume)
+                    .speed(0.01)
+                    .clamp_range(0.0..=1.0),
+            )
+            .on_hover_text_at_pointer("volume");
+            ui.separator();
+            ui.label(RichText::new(format!("{}", instance.config.sample_rate.0)).monospace())
+                .on_hover_text_at_pointer("sample rate");
+            ui.separator();
 
-    pub fn is_valid(&self) -> bool {
-        !self.is_err.load(std::sync::atomic::Ordering::Relaxed)
+            ui.label(RichText::new(format!("{}", instance.config.channels)).monospace())
+                .on_hover_text_at_pointer("channels");
+        } else {
+            ui.label("⚠ could not initialize audio output!");
+            if ui.button("retry").clicked() {
+                self.init_instance();
+            }
+        }
     }
 }
