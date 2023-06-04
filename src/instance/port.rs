@@ -31,7 +31,7 @@ impl PortInstance {
     }
 
     pub fn show(&mut self, ctx: &mut ShowContext, ui: &mut Ui) -> PortResponse {
-        let mut response = PortResponse::new(&self);
+        let mut response = PortResponse::new(self);
 
         let frame_response = egui::Frame::menu(ui.style())
             .shadow(Shadow::NONE)
@@ -139,10 +139,9 @@ impl PortInstance {
                         }
                     }
 
-                    if !self.connections.is_empty() {
-                        if ui.add(Button::new("❌").small()).clicked() {
-                            response.cleared = true
-                        }
+                    if !self.connections.is_empty() && ui.add(Button::new("❌").small()).clicked()
+                    {
+                        response.cleared = true
                     }
                 });
             });
@@ -153,11 +152,9 @@ impl PortInstance {
             }
         }
 
-        if !ui.memory(|memory| memory.is_anything_being_dragged()) {
-            if self.dragging {
-                self.dragging = false;
-                response.released = true;
-            }
+        if !ui.memory(|memory| memory.is_anything_being_dragged()) && self.dragging {
+            self.dragging = false;
+            response.released = true;
         }
 
         response.dragging = self.dragging;

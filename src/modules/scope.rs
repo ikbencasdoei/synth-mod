@@ -80,7 +80,7 @@ impl Scope {
 
 impl Module for Scope {
     fn describe() -> ModuleDescription {
-        ModuleDescription::new(|| Scope::default())
+        ModuleDescription::new(Scope::default)
             .set_name("📈 Scope")
             .add_input::<ScopeInput>()
     }

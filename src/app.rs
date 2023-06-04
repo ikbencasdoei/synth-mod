@@ -65,7 +65,7 @@ impl eframe::App for App {
                 .rack
                 .process(self.output.sample_rate().unwrap_or_default());
 
-            if outputs.len() > 0 {
+            if !outputs.is_empty() {
                 for frame in outputs {
                     self.output.push_frame(frame)
                 }

@@ -177,7 +177,7 @@ pub fn draw_rope(from: Pos2, to: Pos2, ui: &mut Ui, stroke: Stroke) {
         points: [from, control, to],
         closed: false,
         fill: Color32::TRANSPARENT,
-        stroke: stroke,
+        stroke,
     });
 
     painter.set_clip_rect(ui.clip_rect());

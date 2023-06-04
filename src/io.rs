@@ -14,7 +14,7 @@ pub enum ConnectResult {
 }
 
 impl ConnectResult {
-    pub fn as_result(self) -> Result<ConnectResult, ConnectResult> {
+    pub fn into_result(self) -> Result<ConnectResult, ConnectResult> {
         match self {
             ConnectResult::Ok => Ok(self),
             ConnectResult::Replace(..) => Ok(self),
@@ -40,8 +40,8 @@ pub struct Io {
 }
 
 impl Io {
-    pub fn get_input(&self, port: PortHandle) -> Option<&Box<dyn PortValueBoxed>> {
-        self.inputs.get(&port)
+    pub fn get_input(&self, port: PortHandle) -> Option<&dyn PortValueBoxed> {
+        self.inputs.get(&port).map(|boxed| &**boxed)
     }
 
     pub fn set_input(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
@@ -58,7 +58,7 @@ impl Io {
 
     pub fn input_connection(&self, input: PortHandle) -> Option<PortHandle> {
         for (from, connections) in self.connections.iter() {
-            if connections.iter().find(|&&value| value == input).is_some() {
+            if connections.iter().any(|&value| value == input) {
                 return Some(*from);
             }
         }
@@ -70,15 +70,12 @@ impl Io {
         from: PortHandle,
         to: PortHandle,
     ) -> Result<ConnectResult, ConnectResult> {
-        let can_connect = self.can_connect(from, to).as_result();
+        let can_connect = self.can_connect(from, to).into_result();
         if can_connect.is_err() {
             return can_connect;
         }
 
-        if !self.connections.contains_key(&from) {
-            self.connections.insert(from, HashSet::new());
-        }
-        let connections = self.connections.get_mut(&from).unwrap();
+        let connections = self.connections.entry(from).or_insert_with(HashSet::new);
 
         connections.insert(to);
 

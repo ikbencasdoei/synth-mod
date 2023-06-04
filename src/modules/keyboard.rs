@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use eframe::{
     egui::{self, style::Widgets, Layout, Ui},
     epaint::{Color32, Hsva, Vec2},
@@ -28,14 +30,7 @@ enum Tone {
 
 impl Tone {
     fn is_sharp(&self) -> bool {
-        match self {
-            Tone::Cs => true,
-            Tone::Ds => true,
-            Tone::Fs => true,
-            Tone::Gs => true,
-            Tone::As => true,
-            _ => false,
-        }
+        matches!(self, Tone::Cs | Tone::Ds | Tone::Fs | Tone::Gs | Tone::As)
     }
 
     fn as_str(&self) -> &'static str {
@@ -71,9 +66,11 @@ impl Note {
     fn freq(&self) -> f32 {
         440.0 * 2f32.powf(self.offset() as f32 / 12.0)
     }
+}
 
-    fn to_string(&self) -> String {
-        format!("{}{}", self.tone.as_str(), self.octave.index)
+impl Display for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.tone.as_str(), self.octave.index)
     }
 }
 
@@ -136,7 +133,7 @@ impl Module for Keyboard {
     where
         Self: Sized,
     {
-        ModuleDescription::new(|| Keyboard::default())
+        ModuleDescription::new(Keyboard::default)
             .set_name("🎹 Keyboard")
             .add_output::<KeyboardOutput>()
     }
@@ -169,7 +166,7 @@ impl Module for Keyboard {
                             let text = if note.tone.is_sharp() {
                                 note.tone.as_str().to_string()
                             } else {
-                                note.to_string()
+                                format!("{}", note)
                             };
 
                             if ui

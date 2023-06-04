@@ -81,7 +81,7 @@ impl Instance {
     }
 
     pub fn show(&mut self, ctx: &mut ShowContext, ui: &mut Ui) -> InstanceResponse {
-        let mut response = InstanceResponse::new(&self);
+        let mut response = InstanceResponse::new(self);
         ui.horizontal(|ui| {
             ui.heading(&self.description.name);
 

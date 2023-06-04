@@ -115,9 +115,9 @@ pub enum PortType {
     Output,
 }
 
-pub trait InputClosureEdit: Fn(PortHandle, &mut ShowContext, &mut Ui) -> () + DynClone {}
+pub trait InputClosureEdit: Fn(PortHandle, &mut ShowContext, &mut Ui) + DynClone {}
 
-impl<F: Fn(PortHandle, &mut ShowContext, &mut Ui) -> () + DynClone> InputClosureEdit for F {}
+impl<F: Fn(PortHandle, &mut ShowContext, &mut Ui) + DynClone> InputClosureEdit for F {}
 
 impl Clone for Box<dyn InputClosureEdit> {
     fn clone(&self) -> Self {

@@ -53,7 +53,7 @@ impl Audio {
 
 impl Module for Audio {
     fn describe() -> ModuleDescription {
-        ModuleDescription::new(|| Audio::default())
+        ModuleDescription::new(Audio::default)
             .set_name("🔊 Audio Output")
             .add_input::<FrameInput>()
     }

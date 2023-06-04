@@ -30,7 +30,7 @@ impl StreamInstance {
     fn new(device: Device, config: StreamConfig) -> Option<Self> {
         let (producer, mut consumer) = {
             let duration = Duration::from_secs_f32(0.15);
-            let rb: _ = HeapRb::<Frame>::new(Self::ringbuf_size(&config, duration));
+            let rb = HeapRb::<Frame>::new(Self::ringbuf_size(&config, duration));
             rb.split()
         };
 

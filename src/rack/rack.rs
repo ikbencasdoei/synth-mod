@@ -114,7 +114,7 @@ impl Rack {
     }
 
     pub fn connect(&mut self, from: PortHandle, to: PortHandle) -> Result<(), &'static str> {
-        match self.io.can_connect(from, to).as_result() {
+        match self.io.can_connect(from, to).into_result() {
             Err(err) => return Err(err.as_str()),
             Ok(can_connect) => {
                 if let ConnectResult::Replace(from, to) = can_connect {
@@ -205,7 +205,7 @@ impl Rack {
 
                 let response = RackResponse::new(responses);
 
-                response.show_connections(&self, ui);
+                response.show_connections(self, ui);
                 response.show_dragged(self, ui);
                 response.process(self);
 
@@ -257,7 +257,7 @@ impl<'a> ProcessContext<'a> {
 
     fn try_get_input<I: Input>(&self) -> Option<I::Type> {
         let boxed = self.io.get_input(PortHandle::new(I::id(), self.handle))?;
-        let any = &**boxed as &dyn Any;
+        let any = boxed as &dyn Any;
         Some(any.downcast_ref::<I::Type>()?.clone())
     }
 
@@ -284,11 +284,11 @@ pub struct ShowContext<'a> {
 impl<'a> ShowContext<'a> {
     fn try_get_input<I: Input>(&self, handle: PortHandle) -> Option<I::Type> {
         let boxed = self.io.get_input(handle)?;
-        let any = &**boxed as &dyn Any;
+        let any = boxed as &dyn Any;
         Some(any.downcast_ref::<I::Type>()?.clone())
     }
 
-    pub fn get_input_boxed(&self, handle: PortHandle) -> Option<&Box<dyn PortValueBoxed>> {
+    pub fn get_input_boxed(&self, handle: PortHandle) -> Option<&dyn PortValueBoxed> {
         self.io.get_input(handle)
     }
 
