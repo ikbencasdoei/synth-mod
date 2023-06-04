@@ -58,7 +58,7 @@ struct Note {
 }
 
 impl Note {
-    ///relative positions to A4 (440hz)
+    ///Relative position of this `Note` to A4 (440Hz)
     fn offset(&self) -> i32 {
         self.tone as i32 + ((self.octave.index as i32 - 4) * 12) - 9
     }
