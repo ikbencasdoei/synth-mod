@@ -52,12 +52,28 @@ impl Default for Scope {
 }
 
 impl Scope {
-    pub fn points(&self) -> Vec<[f64; 2]> {
-        self.buffer
+    pub fn points(&self) -> Vec<Vec<[f64; 2]>> {
+        let outer = if let State::Updating { pos } = self.state {
+            let (a, b) = self.buffer.split_at(pos);
+            vec![a, b]
+        } else {
+            vec![self.buffer.as_slice()]
+        };
+
+        let mut pos = 0;
+        outer
             .iter()
-            .step_by((self.size / 10000).max(1))
-            .enumerate()
-            .map(|(i, frame)| [i as f64, *frame as f64])
+            .map(|inner| {
+                inner
+                    .iter()
+                    .step_by((self.size / 10000).max(1))
+                    .map(|frame| {
+                        let result = [pos as f64, *frame as f64];
+                        pos += 1;
+                        result
+                    })
+                    .collect()
+            })
             .collect()
     }
 }
@@ -136,11 +152,10 @@ impl Module for Scope {
             .allow_boxed_zoom(false)
             .allow_drag(false)
             .show(ui, |ui| {
-                ui.line({
-                    Line::new(self.points())
-                        .color(Color32::LIGHT_GREEN)
-                        .name("plot")
-                })
+                let lines = self.points();
+                for line in lines {
+                    ui.line(Line::new(line).color(Color32::LIGHT_GREEN).name("plot"))
+                }
             });
     }
 }
