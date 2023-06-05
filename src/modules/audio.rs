@@ -2,7 +2,7 @@ use eframe::egui::{self, Ui};
 
 use crate::{
     frame::Frame,
-    module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Input, Module, ModuleDescription, Port, PortDescription, PortValueBoxed},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -55,7 +55,10 @@ impl Module for Audio {
     fn describe() -> ModuleDescription {
         ModuleDescription::new(Audio::default)
             .set_name("🔊 Audio Output")
-            .add_input::<AudioInput>()
+            .add_input_description(
+                PortDescription::new_input::<AudioInput>()
+                    .add_conversion(|sample: f32| Frame::Mono(sample)),
+            )
     }
 
     fn show(&mut self, _: &ShowContext, ui: &mut Ui) {
