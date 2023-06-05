@@ -235,7 +235,9 @@ impl Module for File {
                     self.try_decode(&path.to_string_lossy())
                 }
             }
+        });
 
+        ui.horizontal(|ui| {
             let secs = self.seek as f32 / ctx.sample_rate as f32;
             ui.label(format!(
                 "{:02}:{:02}:{:02}",
