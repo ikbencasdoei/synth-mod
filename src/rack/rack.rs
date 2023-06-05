@@ -13,11 +13,11 @@ use crate::{
         instance::{Instance, InstanceHandle, TypedInstanceHandle},
         port::PortInstance,
     },
-    io::{ConnectResult, Io, PortHandle},
+    io::{ConnectResult, ConversionId, Io, PortHandle},
     module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
     modules::{
-        audio::Audio, keyboard::Keyboard, ops::Operation, oscillator::Oscillator, scope::Scope,
-        value::Value,
+        audio::Audio, file::File, keyboard::Keyboard, ops::Operation, oscillator::Oscillator,
+        scope::Scope, value::Value,
     },
 };
 
@@ -41,6 +41,7 @@ impl Default for Rack {
         new.init_module::<Value<f32>>();
         new.init_module::<Scope>();
         new.init_module::<Keyboard>();
+        new.init_module::<File>();
 
         new
     }
@@ -48,7 +49,19 @@ impl Default for Rack {
 
 impl Rack {
     pub fn init_module<T: Module>(&mut self) {
-        self.definitions.push(T::describe())
+        let def = T::describe();
+        for input in def.inputs.iter() {
+            for (type_id, closure) in &input.conversions {
+                self.io.conversions.insert(
+                    ConversionId {
+                        port: input.id,
+                        input_type: *type_id,
+                    },
+                    closure.clone(),
+                );
+            }
+        }
+        self.definitions.push(def)
     }
 
     pub fn add_module(&mut self, description: &ModuleDescription) -> InstanceHandle {
@@ -255,23 +268,12 @@ impl<'a> ProcessContext<'a> {
         self.sample_rate
     }
 
-    fn try_get_input<I: Input>(&self) -> Option<I::Type> {
-        let boxed = self.io.get_input(PortHandle::new(I::id(), self.handle))?;
-        let any = boxed as &dyn Any;
-        Some(any.downcast_ref::<I::Type>()?.clone())
-    }
-
     pub fn get_input<I: Input>(&self) -> I::Type {
-        if let Some(value) = self.try_get_input::<I>() {
-            value
-        } else {
-            I::default()
-        }
+        self.io.get_input::<I>(self.handle)
     }
 
     pub fn set_output<P: Port>(&mut self, value: P::Type) {
-        self.io
-            .set_output(PortHandle::new(P::id(), self.handle), Box::new(value))
+        self.io.set_output::<P>(self.handle, value)
     }
 }
 
@@ -283,13 +285,13 @@ pub struct ShowContext<'a> {
 
 impl<'a> ShowContext<'a> {
     fn try_get_input<I: Input>(&self, handle: PortHandle) -> Option<I::Type> {
-        let boxed = self.io.get_input(handle)?;
-        let any = boxed as &dyn Any;
+        let boxed = self.io.get_input_dyn(handle)?;
+        let any = &*boxed as &dyn Any;
         Some(any.downcast_ref::<I::Type>()?.clone())
     }
 
-    pub fn get_input_boxed(&self, handle: PortHandle) -> Option<&dyn PortValueBoxed> {
-        self.io.get_input(handle)
+    pub fn get_input_boxed(&self, handle: PortHandle) -> Option<Box<dyn PortValueBoxed>> {
+        self.io.get_input_dyn(handle)
     }
 
     pub fn get_input<I: Input>(&self, handle: PortHandle) -> I::Type {
@@ -301,6 +303,6 @@ impl<'a> ShowContext<'a> {
     }
 
     pub fn set_input<P: Port>(&mut self, handle: PortHandle, value: P::Type) {
-        self.io.set_input(handle, Box::new(value))
+        self.io.set_input_dyn(handle, Box::new(value))
     }
 }

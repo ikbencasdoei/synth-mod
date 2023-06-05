@@ -1,5 +1,6 @@
 use std::{
     any::{Any, TypeId},
+    collections::HashMap,
     fmt::Debug,
 };
 
@@ -70,6 +71,11 @@ impl ModuleDescription {
         self.outputs.push(PortDescription::new_output::<I>());
         self
     }
+
+    pub fn add_input_description(mut self, description: PortDescription) -> Self {
+        self.inputs.push(description);
+        self
+    }
 }
 
 pub trait PortValueBoxed: Any + DynClone + 'static {
@@ -135,6 +141,16 @@ impl Clone for Box<dyn InputClosureValue> {
     }
 }
 
+pub trait ConversionClosure: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone {}
+
+impl<F: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone> ConversionClosure for F {}
+
+impl Clone for Box<dyn ConversionClosure> {
+    fn clone(&self) -> Self {
+        dyn_clone::clone_box(&**self)
+    }
+}
+
 #[derive(Clone)]
 pub struct PortDescription {
     pub name: &'static str,
@@ -143,6 +159,7 @@ pub struct PortDescription {
     pub id: PortId,
     pub closure_edit: Option<Box<dyn InputClosureEdit>>,
     pub closure_value: Option<Box<dyn InputClosureValue>>,
+    pub conversions: HashMap<TypeId, Box<dyn ConversionClosure>>,
 }
 
 impl PortDescription {
@@ -165,6 +182,7 @@ impl PortDescription {
                 let value = ctx.get_input::<I>(handle);
                 value.to_string()
             })),
+            conversions: HashMap::new(),
         }
     }
 
@@ -176,7 +194,27 @@ impl PortDescription {
             id: I::id(),
             closure_edit: None,
             closure_value: None,
+            conversions: HashMap::new(),
         }
+    }
+
+    pub fn add_conversion<I: PortValueBoxed + Clone, O: PortValueBoxed>(
+        mut self,
+        closure: impl Fn(I) -> O + Clone + 'static,
+    ) -> Self {
+        if TypeId::of::<O>() != self.id.value_type {
+            panic!("incorrect conversion output")
+        }
+
+        self.conversions.insert(
+            TypeId::of::<I>(),
+            Box::new(move |boxed: Box<dyn Any>| {
+                let any = &*boxed as &dyn Any;
+                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
+            }),
+        );
+
+        self
     }
 }
 

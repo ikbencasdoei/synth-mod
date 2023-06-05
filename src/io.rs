@@ -1,8 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    any::{Any, TypeId},
+    collections::{HashMap, HashSet},
+};
 
 use crate::{
     instance::instance::InstanceHandle,
-    module::{PortId, PortValueBoxed},
+    module::{ConversionClosure, Input, Port, PortId, PortValueBoxed},
 };
 
 #[derive(Debug)]
@@ -37,23 +40,58 @@ impl ConnectResult {
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
     connections: HashMap<PortHandle, HashSet<PortHandle>>,
+    pub conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
 }
 
 impl Io {
-    pub fn get_input(&self, port: PortHandle) -> Option<&dyn PortValueBoxed> {
-        self.inputs.get(&port).map(|boxed| &**boxed)
+    pub fn get_input_dyn(&self, port: PortHandle) -> Option<Box<dyn PortValueBoxed>> {
+        self.inputs.get(&port).cloned()
     }
 
-    pub fn set_input(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
+    pub fn set_input_dyn(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
         self.inputs.insert(port, value);
     }
 
-    pub fn set_output(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
+    pub fn set_output_dyn(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
         if let Some(connections) = self.connections.get(&port) {
             for connected in connections.clone().into_iter() {
-                self.set_input(connected, value.clone())
+                self.set_input_dyn(connected, value.clone())
             }
         }
+    }
+
+    fn try_get_input<I: Input>(&self, instance: InstanceHandle) -> Option<I::Type> {
+        let boxed = self.get_input_dyn(PortHandle::new(I::id(), instance))?;
+
+        if let Some(result) = {
+            let any = &*boxed as &dyn Any;
+            any.downcast_ref::<I::Type>()
+        } {
+            Some(result.clone())
+        } else {
+            let boxed: Box<dyn Any> = (self
+                .conversions
+                .get(&ConversionId {
+                    port: I::id(),
+                    input_type: (*boxed).type_id(),
+                })
+                .expect("should have this"))(boxed);
+
+            let any = &*boxed;
+            Some(any.downcast_ref::<I::Type>().unwrap().clone())
+        }
+    }
+
+    pub fn get_input<I: Input>(&self, instance: InstanceHandle) -> I::Type {
+        if let Some(value) = self.try_get_input::<I>(instance) {
+            value
+        } else {
+            I::default()
+        }
+    }
+
+    pub fn set_output<P: Port>(&mut self, instance: InstanceHandle, value: P::Type) {
+        self.set_output_dyn(PortHandle::new(P::id(), instance), Box::new(value))
     }
 
     pub fn input_connection(&self, input: PortHandle) -> Option<PortHandle> {
@@ -83,7 +121,17 @@ impl Io {
     }
 
     pub fn can_connect(&self, from: PortHandle, to: PortHandle) -> ConnectResult {
-        let result = from.is_compatible(to);
+        let mut result = from.is_compatible(to);
+
+        if let ConnectResult::InCompatible = result {
+            if self.conversions.contains_key(&ConversionId {
+                port: to.id,
+                input_type: from.id.value_type,
+            }) {
+                result = ConnectResult::Ok;
+            }
+        }
+
         if let ConnectResult::Ok = result {
             if let Some(connection) = self.input_connection(to) {
                 ConnectResult::Replace(connection, to)
@@ -121,4 +169,10 @@ impl PortHandle {
             ConnectResult::SameInstance
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct ConversionId {
+    pub port: PortId,
+    pub input_type: TypeId,
 }

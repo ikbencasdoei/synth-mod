@@ -8,7 +8,8 @@ use eframe::{
 };
 
 use crate::{
-    module::{Input, Module, ModuleDescription, Port},
+    frame::Frame,
+    module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -82,6 +83,10 @@ impl Module for Scope {
     fn describe() -> ModuleDescription {
         ModuleDescription::new(Scope::default)
             .set_name("📈 Scope")
+            .add_input_description(
+                PortDescription::new_input::<ScopeInput>()
+                    .add_conversion(|frame: Frame| frame.as_f32_mono()),
+            )
             .add_input::<ScopeInput>()
     }
 
