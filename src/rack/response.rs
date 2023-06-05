@@ -186,6 +186,7 @@ pub fn draw_rope(from: Pos2, to: Pos2, ui: &mut Ui, stroke: Stroke) {
 
 fn control_point(a: Pos2, b: Pos2) -> Pos2 {
     let mut middle = (b - a) / 2.0;
-    middle.y += a.distance(b) / 8.0;
+    middle.y += a.distance(b) / 5.0;
+    middle.y += (b.y - a.y).max(0.0) / 3.0;
     a + middle
 }
