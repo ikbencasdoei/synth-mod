@@ -94,7 +94,7 @@ pub struct Output {
     pub instance: Option<StreamInstance>,
     volume: f32,
     paused: bool,
-    damper: LinearDamper<f32>,
+    damper: Option<LinearDamper<f32>>,
 }
 
 impl Output {
@@ -117,7 +117,7 @@ impl Output {
     pub fn new() -> Self {
         let mut new = Self {
             instance: None,
-            damper: LinearDamper::new(0.0001, 0.0),
+            damper: None,
             volume: 0.5,
             paused: true,
         };
@@ -137,10 +137,14 @@ impl Output {
 
     pub fn push_frame(&mut self, value: Frame) {
         if let Some(instance) = &mut self.instance {
+            let damper = &mut self
+                .damper
+                .as_mut()
+                .expect("if there is an instance there should be a damper");
             let ampl = if self.paused {
-                self.damper.frame(0.0)
+                damper.frame(0.0)
             } else {
-                self.damper.frame(self.volume)
+                damper.frame(self.volume)
             };
 
             instance.push_frame(value, ampl)
@@ -155,6 +159,10 @@ impl Output {
             return
         };
         self.instance = StreamInstance::new(device, config);
+
+        if let Some(sample_rate) = self.sample_rate() {
+            self.damper = Some(LinearDamper::cutoff(sample_rate));
+        }
     }
 
     pub fn sample_rate(&self) -> Option<u32> {
