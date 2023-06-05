@@ -28,7 +28,7 @@ impl Wave {
     }
 }
 
-struct FrequencyInput;
+pub struct FrequencyInput;
 
 impl Port for FrequencyInput {
     type Type = f32;

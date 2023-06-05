@@ -12,7 +12,7 @@ use crate::{
     rack::rack::{ProcessContext, ShowContext},
 };
 
-struct InValueA<T>(PhantomData<T>);
+pub struct InValueA<T>(PhantomData<T>);
 
 impl<T: PortValueBoxed + Clone> Port for InValueA<T> {
     type Type = T;
@@ -36,7 +36,7 @@ impl Input for InValueA<f32> {
     }
 }
 
-struct InValueB<T>(PhantomData<T>);
+pub struct InValueB<T>(PhantomData<T>);
 
 impl<T: PortValueBoxed + Clone> Port for InValueB<T> {
     type Type = T;
