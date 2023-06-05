@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    module::{Module, ModuleDescription, Port},
+    module::{Module, ModuleDescription, Port, PortValueBoxed},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -90,13 +90,37 @@ impl Octave {
     }
 }
 
-pub struct KeyboardOutput;
+pub struct KeyboardFreqOutput;
 
-impl Port for KeyboardOutput {
+impl Port for KeyboardFreqOutput {
     type Type = f32;
 
     fn name() -> &'static str {
         "out freq"
+    }
+}
+
+pub struct KeyboardPressedOutput;
+
+impl Port for KeyboardPressedOutput {
+    type Type = bool;
+
+    fn name() -> &'static str {
+        "pressed"
+    }
+}
+
+impl PortValueBoxed for bool {
+    fn to_string(&self) -> String {
+        format!("{}", self)
+    }
+
+    fn as_value(&self) -> f32 {
+        if *self {
+            1.0
+        } else {
+            0.0
+        }
     }
 }
 
@@ -135,14 +159,17 @@ impl Module for Keyboard {
     {
         ModuleDescription::new(Keyboard::default)
             .set_name("🎹 Keyboard")
-            .add_output::<KeyboardOutput>()
+            .add_output::<KeyboardFreqOutput>()
+            .add_output::<KeyboardPressedOutput>()
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
         if let Some(pressed) = self.pressed {
-            ctx.set_output::<KeyboardOutput>(pressed.freq())
+            ctx.set_output::<KeyboardFreqOutput>(pressed.freq());
+            ctx.set_output::<KeyboardPressedOutput>(true)
         } else {
-            ctx.set_output::<KeyboardOutput>(0.0)
+            ctx.set_output::<KeyboardFreqOutput>(0.0);
+            ctx.set_output::<KeyboardPressedOutput>(false)
         }
     }
 
