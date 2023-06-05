@@ -15,19 +15,19 @@ impl PortValueBoxed for f32 {
     }
 }
 
-pub struct FrameInput;
+pub struct AudioInput;
 
-impl Port for FrameInput {
-    type Type = f32;
+impl Port for AudioInput {
+    type Type = Frame;
 
     fn name() -> &'static str {
         "output"
     }
 }
 
-impl Input for FrameInput {
+impl Input for AudioInput {
     fn default() -> Self::Type {
-        0.0
+        Frame::ZERO
     }
 }
 
@@ -55,7 +55,7 @@ impl Module for Audio {
     fn describe() -> ModuleDescription {
         ModuleDescription::new(Audio::default)
             .set_name("🔊 Audio Output")
-            .add_input::<FrameInput>()
+            .add_input::<AudioInput>()
     }
 
     fn show(&mut self, _: &ShowContext, ui: &mut Ui) {
@@ -70,6 +70,6 @@ impl Module for Audio {
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
-        self.current = Some(Frame::Mono(ctx.get_input::<FrameInput>() * self.volume))
+        self.current = Some(ctx.get_input::<AudioInput>() * self.volume)
     }
 }
