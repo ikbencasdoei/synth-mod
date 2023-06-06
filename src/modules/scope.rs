@@ -39,6 +39,7 @@ pub struct Scope {
     size: usize,
     interval: usize,
     state: State,
+    lock_range: bool,
 }
 
 impl Default for Scope {
@@ -48,6 +49,7 @@ impl Default for Scope {
             size: 10000,
             interval: 50000,
             state: State::Updating { pos: 0 },
+            lock_range: true,
         }
     }
 }
@@ -147,20 +149,29 @@ impl Module for Scope {
                     self.interval = interval * (ctx.sample_rate as usize / 1000)
                 }
             }
+
+            ui.checkbox(&mut self.lock_range, "locked")
         });
 
-        Plot::new(ctx.instance)
+        let mut plot = Plot::new(ctx.instance)
             .legend(Legend::default())
             .height(100.0)
             .allow_zoom(false)
             .allow_scroll(false)
             .allow_boxed_zoom(false)
-            .allow_drag(false)
-            .show(ui, |ui| {
-                let lines = self.points();
-                for line in lines {
-                    ui.line(Line::new(line).color(Color32::LIGHT_GREEN).name("plot"))
-                }
-            });
+            .allow_drag(false);
+
+        if self.lock_range {
+            plot = plot.center_y_axis(true);
+            plot = plot.include_y(1.0);
+            plot = plot.include_y(-1.0);
+        }
+
+        plot.show(ui, |ui| {
+            let lines = self.points();
+            for line in lines {
+                ui.line(Line::new(line).color(Color32::LIGHT_GREEN).name("plot"))
+            }
+        });
     }
 }
