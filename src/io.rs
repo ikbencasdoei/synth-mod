@@ -163,11 +163,7 @@ impl PortHandle {
     }
 
     pub fn is_compatible(&self, other: Self) -> ConnectResult {
-        if self.instance != other.instance {
-            self.id.is_compatible(other.id)
-        } else {
-            ConnectResult::SameInstance
-        }
+        self.id.is_compatible(other.id)
     }
 }
 
