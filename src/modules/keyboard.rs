@@ -173,45 +173,48 @@ impl Module for Keyboard {
         }
     }
 
-    fn show(&mut self, _: &ShowContext, ui: &mut Ui) {
-        egui::ScrollArea::horizontal().show(ui, |ui| {
-            ui.set_height(100.0);
-            ui.with_layout(
-                Layout::left_to_right(eframe::emath::Align::BOTTOM).with_cross_justify(true),
-                |ui| {
-                    for i in 0..9 {
-                        let octave = Octave { index: i };
-                        for note in octave.notes() {
-                            if note.tone.is_sharp() {
-                                ui.style_mut().visuals.widgets = self.sharp_visuals.clone();
-                            } else {
-                                ui.style_mut().visuals.widgets = self.key_visuals.clone();
+    fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {
+        egui::ScrollArea::horizontal()
+            .id_source(ctx.instance)
+            .drag_to_scroll(false)
+            .show(ui, |ui| {
+                ui.set_height(100.0);
+                ui.with_layout(
+                    Layout::left_to_right(eframe::emath::Align::BOTTOM).with_cross_justify(true),
+                    |ui| {
+                        for i in 0..9 {
+                            let octave = Octave { index: i };
+                            for note in octave.notes() {
+                                if note.tone.is_sharp() {
+                                    ui.style_mut().visuals.widgets = self.sharp_visuals.clone();
+                                } else {
+                                    ui.style_mut().visuals.widgets = self.key_visuals.clone();
+                                }
+
+                                ui.style_mut().spacing.item_spacing = Vec2::splat(2.0);
+
+                                let text = if note.tone.is_sharp() {
+                                    note.tone.as_str().to_string()
+                                } else {
+                                    format!("{}", note)
+                                };
+
+                                if ui
+                                    .add(
+                                        egui::Button::new(egui::RichText::new(text).monospace())
+                                            .sense(egui::Sense::drag()),
+                                    )
+                                    .dragged()
+                                {
+                                    self.pressed = Some(note)
+                                }
+
+                                ui.reset_style();
                             }
-
-                            ui.style_mut().spacing.item_spacing = Vec2::splat(2.0);
-
-                            let text = if note.tone.is_sharp() {
-                                note.tone.as_str().to_string()
-                            } else {
-                                format!("{}", note)
-                            };
-
-                            if ui
-                                .add(
-                                    egui::Button::new(egui::RichText::new(text).monospace())
-                                        .sense(egui::Sense::drag()),
-                                )
-                                .dragged()
-                            {
-                                self.pressed = Some(note)
-                            }
-
-                            ui.reset_style();
                         }
-                    }
-                },
-            )
-        });
+                    },
+                )
+            });
 
         if !ui.memory(|memory| memory.is_anything_being_dragged()) {
             self.pressed = None;
