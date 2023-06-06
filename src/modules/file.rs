@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{io::ErrorKind, path::Path};
 
 use eframe::egui::{Slider, Ui};
 use rfd::FileDialog;
@@ -6,7 +6,6 @@ use rubato::{FftFixedIn, Resampler};
 use symphonia::core::{
     audio::SampleBuffer,
     codecs::DecoderOptions,
-    errors::Error,
     formats::FormatOptions,
     io::{MediaSourceStream, MediaSourceStreamOptions},
     meta::MetadataOptions,
@@ -101,8 +100,14 @@ impl File {
         loop {
             let packet = match format.next_packet() {
                 Ok(packet) => packet,
-                Err(Error::ResetRequired) => {
+                Err(symphonia::core::errors::Error::ResetRequired) => {
                     return None;
+                }
+                Err(symphonia::core::errors::Error::IoError(err)) => {
+                    if err.kind() != ErrorKind::UnexpectedEof {
+                        dbg!(err);
+                    }
+                    break;
                 }
                 Err(err) => {
                     dbg!(err);
@@ -127,11 +132,11 @@ impl File {
                     sample_buffer.copy_interleaved_ref(decoded);
                     buffer.extend(sample_buffer.samples());
                 }
-                Err(Error::IoError(err)) => {
+                Err(symphonia::core::errors::Error::IoError(err)) => {
                     dbg!(err);
                     continue;
                 }
-                Err(Error::DecodeError(err)) => {
+                Err(symphonia::core::errors::Error::DecodeError(err)) => {
                     dbg!(err);
                     continue;
                 }
@@ -220,10 +225,10 @@ impl Module for File {
             ui.selectable_value(&mut self.playing, true, "▶");
             ui.selectable_value(&mut self.playing, false, "⏸");
 
-            ui.text_edit_singleline(&mut self.path);
-            if ui.button("load").clicked() {
+            if ui.text_edit_singleline(&mut self.path).changed() {
                 self.update();
             }
+
             if ui.button("pick").clicked() {
                 let mut dialog = FileDialog::new().add_filter("audio", &["mp3"]);
 
