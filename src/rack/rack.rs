@@ -156,10 +156,10 @@ impl Rack {
 
     pub fn show(&mut self, ctx: &Context, sample_rate: u32) {
         egui::SidePanel::right("rackplus")
-            .exact_width(40.0)
+            .exact_width(70.0)
             .resizable(false)
             .show(ctx, |ui| {
-                if ui.button("➕").clicked() {
+                if ui.button("➕ Panel").clicked() {
                     self.panels.push((Vec::new(), 0.0))
                 }
             });
@@ -186,7 +186,7 @@ impl Rack {
                                     responses.insert(*handle, instance.show(&mut ctx, ui));
                                 }
 
-                                ui.menu_button("➕", |ui| {
+                                ui.menu_button("➕ Module", |ui| {
                                     for definition in self.definitions.clone().iter() {
                                         if ui.button(&definition.name).clicked() {
                                             self.add_module(definition, i);
