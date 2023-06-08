@@ -54,90 +54,7 @@ impl PortInstance {
                         }
                     }
 
-                    let desired_size = ui.spacing().interact_size.y * Vec2::splat(1.0);
-
-                    let sense = if let PortType::Output = self.description.port_type {
-                        Sense::drag()
-                    } else {
-                        Sense::hover()
-                    };
-
-                    let (rect, port_response) = ui.allocate_exact_size(desired_size, sense);
-
-                    if port_response.drag_started() {
-                        self.dragging = true;
-                    }
-
-                    response.position = rect.center();
-
-                    if ui.is_rect_visible(rect) {
-                        let visuals = ui.style().interact(&port_response);
-                        let rect = rect.expand(visuals.expansion);
-                        let radius = 0.5 * rect.height();
-                        let inner_radius = 0.5 * radius;
-                        let stroke =
-                            Stroke::new(visuals.fg_stroke.width + 0.5, visuals.fg_stroke.color);
-
-                        ui.painter()
-                            .circle(rect.center(), radius, visuals.bg_fill, stroke);
-
-                        match self.description.port_type {
-                            PortType::Input => {
-                                ui.painter().circle(
-                                    rect.center(),
-                                    inner_radius,
-                                    visuals.bg_fill,
-                                    stroke,
-                                );
-
-                                let value: f32 = if !self.connections.is_empty() {
-                                    if let Some(boxed) = ctx.get_input_boxed(self.handle) {
-                                        boxed.as_value()
-                                    } else {
-                                        0.0
-                                    }
-                                } else {
-                                    0.0
-                                };
-
-                                ui.painter().circle_filled(
-                                    rect.center(),
-                                    0.5 * inner_radius,
-                                    Hsva::new(0.5, 1.0, value.clamp(0.0, 1.0), 1.0),
-                                );
-                            }
-                            PortType::Output => {
-                                if self.connections.is_empty() {
-                                    ui.painter().circle_filled(
-                                        rect.center(),
-                                        inner_radius,
-                                        visuals.fg_stroke.color,
-                                    );
-                                } else {
-                                    ui.painter().circle_filled(
-                                        rect.center(),
-                                        inner_radius,
-                                        Color32::WHITE,
-                                    );
-                                }
-                            }
-                        }
-                    }
-
-                    if let PortType::Input = self.description.port_type {
-                        if self.connections.is_empty() {
-                            port_response.on_hover_text_at_pointer("Input");
-                        } else {
-                            port_response.on_hover_text_at_pointer(self
-                                .description
-                                .closure_value
-                                .as_ref()
-                                .expect("this closure should be available on input ports")(
-                                self.handle,
-                                ctx,
-                            ));
-                        }
-                    }
+                    self.show_port_visual(&mut response, ctx, ui);
 
                     if !self.connections.is_empty() && ui.add(Button::new("❌").small()).clicked()
                     {
@@ -160,6 +77,88 @@ impl PortInstance {
         response.dragging = self.dragging;
 
         response
+    }
+
+    fn show_port_visual(
+        &mut self,
+        response: &mut PortResponse,
+        ctx: &mut ShowContext,
+        ui: &mut Ui,
+    ) {
+        let sense = if let PortType::Output = self.description.port_type {
+            Sense::drag()
+        } else {
+            Sense::hover()
+        };
+
+        let desired_size = ui.spacing().interact_size.y * Vec2::splat(1.0);
+        let (rect, port_response) = ui.allocate_exact_size(desired_size, sense);
+
+        if port_response.drag_started() {
+            self.dragging = true;
+        }
+
+        response.position = rect.center();
+
+        if ui.is_rect_visible(rect) {
+            let visuals = ui.style().interact(&port_response);
+            let rect = rect.expand(visuals.expansion);
+            let radius = 0.5 * rect.height();
+            let inner_radius = 0.5 * radius;
+            let stroke = Stroke::new(visuals.fg_stroke.width + 0.5, visuals.fg_stroke.color);
+
+            ui.painter()
+                .circle(rect.center(), radius, visuals.bg_fill, stroke);
+
+            match self.description.port_type {
+                PortType::Input => {
+                    ui.painter()
+                        .circle(rect.center(), inner_radius, visuals.bg_fill, stroke);
+
+                    let value: f32 = if !self.connections.is_empty() {
+                        if let Some(boxed) = ctx.get_input_boxed(self.handle) {
+                            boxed.as_value()
+                        } else {
+                            0.0
+                        }
+                    } else {
+                        0.0
+                    };
+
+                    ui.painter().circle_filled(
+                        rect.center(),
+                        0.5 * inner_radius,
+                        Hsva::new(0.5, 1.0, value.clamp(0.0, 1.0), 1.0),
+                    );
+                }
+                PortType::Output => {
+                    if self.connections.is_empty() {
+                        ui.painter().circle_filled(
+                            rect.center(),
+                            inner_radius,
+                            visuals.fg_stroke.color,
+                        );
+                    } else {
+                        ui.painter()
+                            .circle_filled(rect.center(), inner_radius, Color32::WHITE);
+                    }
+                }
+            }
+        }
+
+        if let PortType::Input = self.description.port_type {
+            if self.connections.is_empty() {
+                port_response.on_hover_text_at_pointer("Input");
+            } else {
+                port_response.on_hover_text_at_pointer(self
+                    .description
+                    .closure_value
+                    .as_ref()
+                    .expect("this closure should be available on input ports")(
+                    self.handle, ctx
+                ));
+            }
+        }
     }
 }
 
