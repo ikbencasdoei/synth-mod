@@ -5,14 +5,14 @@ use std::{
 
 use eframe::{
     self,
-    egui::{self, Context},
+    egui::{self, Context, Sense, Ui},
 };
 
 use super::response::RackResponse;
 use crate::{
     frame::Frame,
     instance::{
-        instance::{Instance, InstanceHandle, TypedInstanceHandle},
+        instance::{Instance, InstanceHandle, InstanceResponse, TypedInstanceHandle},
         port::PortInstance,
     },
     io::{ConnectResult, ConversionId, Io, PortHandle},
@@ -23,9 +23,75 @@ use crate::{
     },
 };
 
+#[derive(Clone)]
+struct Panel {
+    instances: Vec<InstanceHandle>,
+    width: f32,
+}
+
+impl Panel {
+    pub fn new() -> Self {
+        Self {
+            instances: Vec::new(),
+            width: 0.0,
+        }
+    }
+
+    pub fn add_module(&mut self, handle: InstanceHandle) {
+        self.instances.push(handle)
+    }
+
+    pub fn remove_module(&mut self, handle: InstanceHandle) {
+        self.instances.retain(|&instance| instance != handle)
+    }
+
+    pub fn show(
+        &self,
+        rack: &mut Rack,
+        index: usize,
+        ui: &mut Ui,
+        responses: &mut HashMap<InstanceHandle, InstanceResponse>,
+        sample_rate: u32,
+    ) {
+        ui.vertical(|ui| {
+            ui.set_min_width(100.0);
+            ui.set_max_width(self.width);
+
+            for handle in self.instances.iter() {
+                let instance = rack.instances.get_mut(handle).unwrap();
+                let mut ctx = ShowContext {
+                    io: &mut rack.io,
+                    instance: *handle,
+                    sample_rate,
+                };
+                responses.insert(*handle, instance.show(&mut ctx, ui));
+            }
+
+            ui.menu_button("➕ Module", |ui| {
+                for definition in rack.definitions.clone().iter() {
+                    if ui.button(&definition.name).clicked() {
+                        rack.add_module(definition, index);
+                        ui.close_menu();
+                    }
+                }
+            });
+
+            rack.panels.get_mut(index).unwrap().width = ui.min_rect().size().x;
+        });
+
+        let sep_response = ui.separator();
+        if ui
+            .interact(sep_response.rect, sep_response.id, Sense::drag())
+            .dragged()
+        {
+            // dbg!(index);
+        }
+    }
+}
+
 pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
-    panels: Vec<(Vec<InstanceHandle>, f32)>,
+    panels: Vec<Panel>,
     definitions: Vec<ModuleDescription>,
     pub io: Io,
 }
@@ -72,14 +138,14 @@ impl Rack {
         let instance = Instance::from_description(description);
         let handle = instance.handle;
         self.instances.insert(handle, instance);
-        self.panels.get_mut(panel).unwrap().0.push(handle);
+        self.panels.get_mut(panel).unwrap().add_module(handle);
         handle
     }
 
     #[allow(unused)]
     pub fn add_module_typed<T: Module>(&mut self) -> TypedInstanceHandle<T> {
         if self.panels.get(0).is_none() {
-            self.panels.push((Vec::new(), 0.0))
+            self.panels.push(Panel::new())
         }
 
         self.add_module(&T::describe(), 0).as_typed()
@@ -90,8 +156,8 @@ impl Rack {
             return;
         }
 
-        for (panel, _) in self.panels.iter_mut() {
-            panel.retain(|&instance| instance != handle)
+        for panel in self.panels.iter_mut() {
+            panel.remove_module(handle)
         }
 
         self.instances.remove(&handle);
@@ -160,7 +226,7 @@ impl Rack {
             .resizable(false)
             .show(ctx, |ui| {
                 if ui.button("➕ Panel").clicked() {
-                    self.panels.push((Vec::new(), 0.0))
+                    self.panels.push(Panel::new())
                 }
             });
 
@@ -171,34 +237,8 @@ impl Rack {
                     let mut responses = HashMap::new();
 
                     ui.horizontal_centered(|ui| {
-                        for (i, (panel, width)) in self.panels.clone().into_iter().enumerate() {
-                            ui.vertical(|ui| {
-                                ui.set_min_width(100.0);
-                                ui.set_max_width(width);
-
-                                for handle in panel.iter() {
-                                    let instance = self.instances.get_mut(handle).unwrap();
-                                    let mut ctx = ShowContext {
-                                        io: &mut self.io,
-                                        instance: *handle,
-                                        sample_rate,
-                                    };
-                                    responses.insert(*handle, instance.show(&mut ctx, ui));
-                                }
-
-                                ui.menu_button("➕ Module", |ui| {
-                                    for definition in self.definitions.clone().iter() {
-                                        if ui.button(&definition.name).clicked() {
-                                            self.add_module(definition, i);
-                                            ui.close_menu();
-                                        }
-                                    }
-                                });
-
-                                self.panels.get_mut(i).unwrap().1 = ui.min_rect().size().x;
-                            });
-
-                            ui.separator();
+                        for (i, panel) in self.panels.clone().into_iter().enumerate() {
+                            panel.show(self, i, ui, &mut responses, sample_rate);
                         }
                     });
 
