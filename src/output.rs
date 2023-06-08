@@ -93,7 +93,7 @@ impl StreamInstance {
 pub struct Output {
     pub instance: Option<StreamInstance>,
     volume: f32,
-    paused: bool,
+    muted: bool,
     damper: Option<LinearDamper<f32>>,
 }
 
@@ -119,7 +119,7 @@ impl Output {
             instance: None,
             damper: None,
             volume: 0.5,
-            paused: true,
+            muted: false,
         };
 
         new.init_instance();
@@ -141,7 +141,7 @@ impl Output {
                 .damper
                 .as_mut()
                 .expect("if there is an instance there should be a damper");
-            let ampl = if self.paused {
+            let ampl = if self.muted {
                 damper.frame(0.0)
             } else {
                 damper.frame(self.volume)
@@ -180,8 +180,14 @@ impl Output {
         }
 
         if let Some(instance) = &mut self.instance {
-            ui.selectable_value(&mut self.paused, false, "▶");
-            ui.selectable_value(&mut self.paused, true, "⏸");
+            let icon = if self.muted { "🔇" } else { "🔊" };
+            if ui
+                .add(egui::Label::new(icon).sense(egui::Sense::click()))
+                .clicked()
+            {
+                self.muted = !self.muted;
+            }
+
             ui.add(
                 egui::DragValue::new(&mut self.volume)
                     .speed(0.01)
