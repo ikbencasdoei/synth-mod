@@ -42,7 +42,8 @@ impl Panel {
     }
 
     pub fn remove_instance(&mut self, handle: InstanceHandle) {
-        self.instances.retain(|&instance| instance != handle)
+        self.instances.retain(|&instance| instance != handle);
+        self.width = 0.0;
     }
 
     pub fn show(
