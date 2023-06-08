@@ -55,10 +55,8 @@ impl eframe::App for App {
             });
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            self.rack
-                .show(ui, self.output.sample_rate().unwrap_or_default());
-        });
+        self.rack
+            .show(ctx, self.output.sample_rate().unwrap_or_default());
 
         while !self.output.is_full() {
             let outputs = self

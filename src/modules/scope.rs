@@ -122,6 +122,7 @@ impl Module for Scope {
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {
+        ui.set_min_width(400.0);
         ui.horizontal(|ui| {
             ui.label("duration");
             {

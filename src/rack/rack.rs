@@ -2,9 +2,8 @@ use std::{any::Any, collections::HashMap};
 
 use eframe::{
     self,
-    egui::{self, Ui},
+    egui::{self, Context},
 };
-use indexmap::IndexMap;
 
 use super::response::RackResponse;
 use crate::{
@@ -22,7 +21,8 @@ use crate::{
 };
 
 pub struct Rack {
-    pub instances: IndexMap<InstanceHandle, Instance>,
+    pub instances: HashMap<InstanceHandle, Instance>,
+    panels: Vec<(Vec<InstanceHandle>, f32)>,
     definitions: Vec<ModuleDescription>,
     io: Io,
 }
@@ -31,6 +31,7 @@ impl Default for Rack {
     fn default() -> Self {
         let mut new = Self {
             instances: Default::default(),
+            panels: Vec::new(),
             definitions: Default::default(),
             io: Io::default(),
         };
@@ -64,22 +65,32 @@ impl Rack {
         self.definitions.push(def)
     }
 
-    pub fn add_module(&mut self, description: &ModuleDescription) -> InstanceHandle {
+    pub fn add_module(&mut self, description: &ModuleDescription, panel: usize) -> InstanceHandle {
         let instance = Instance::from_description(description);
         let handle = instance.handle;
         self.instances.insert(handle, instance);
+        self.panels.get_mut(panel).unwrap().0.push(handle);
         handle
     }
 
     #[allow(unused)]
     pub fn add_module_typed<T: Module>(&mut self) -> TypedInstanceHandle<T> {
-        self.add_module(&T::describe()).as_typed()
+        if self.panels.get(0).is_none() {
+            self.panels.push((Vec::new(), 0.0))
+        }
+
+        self.add_module(&T::describe(), 0).as_typed()
     }
 
     pub fn remove_module(&mut self, handle: InstanceHandle) {
         if !self.instances.contains_key(&handle) {
             return;
         }
+
+        for (panel, _) in self.panels.iter_mut() {
+            panel.retain(|&instance| instance != handle)
+        }
+
         //remove connections
         //connections from module
         let connections_from = {
@@ -123,7 +134,7 @@ impl Rack {
             }
         }
 
-        self.instances.shift_remove(&handle);
+        self.instances.remove(&handle);
     }
 
     pub fn connect(&mut self, from: PortHandle, to: PortHandle) -> Result<(), &'static str> {
@@ -197,40 +208,60 @@ impl Rack {
         instance.get_port_mut(handle)
     }
 
-    pub fn show(&mut self, ui: &mut Ui, sample_rate: u32) {
-        egui::ScrollArea::vertical()
-            .stick_to_bottom(true)
-            .show(ui, |ui| {
-                let responses = self
-                    .instances
-                    .iter_mut()
-                    .map(|(handle, instance)| {
-                        (*handle, {
-                            let mut ctx = ShowContext {
-                                io: &mut self.io,
-                                instance: *handle,
-                                sample_rate,
-                            };
-                            instance.show(&mut ctx, ui)
-                        })
-                    })
-                    .collect::<HashMap<_, _>>();
-
-                let response = RackResponse::new(responses);
-
-                response.show_connections(self, ui);
-                response.show_dragged(self, ui);
-                response.process(self);
-
-                ui.menu_button("➕", |ui| {
-                    for definition in self.definitions.clone().iter() {
-                        if ui.button(&definition.name).clicked() {
-                            self.add_module(definition);
-                            ui.close_menu();
-                        }
-                    }
-                })
+    pub fn show(&mut self, ctx: &Context, sample_rate: u32) {
+        egui::SidePanel::right("rackplus")
+            .exact_width(40.0)
+            .resizable(false)
+            .show(ctx, |ui| {
+                if ui.button("➕").clicked() {
+                    self.panels.push((Vec::new(), 0.0))
+                }
             });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui::ScrollArea::both()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    let mut responses = HashMap::new();
+
+                    ui.horizontal_centered(|ui| {
+                        for (i, (panel, width)) in self.panels.clone().into_iter().enumerate() {
+                            ui.vertical(|ui| {
+                                ui.set_max_width(width);
+
+                                for handle in panel.iter() {
+                                    let instance = self.instances.get_mut(handle).unwrap();
+                                    let mut ctx = ShowContext {
+                                        io: &mut self.io,
+                                        instance: *handle,
+                                        sample_rate,
+                                    };
+                                    responses.insert(*handle, instance.show(&mut ctx, ui));
+                                }
+
+                                ui.menu_button("➕", |ui| {
+                                    for definition in self.definitions.clone().iter() {
+                                        if ui.button(&definition.name).clicked() {
+                                            self.add_module(definition, i);
+                                            ui.close_menu();
+                                        }
+                                    }
+                                });
+
+                                self.panels.get_mut(i).unwrap().1 = ui.min_rect().size().x;
+                            });
+
+                            ui.separator();
+                        }
+                    });
+
+                    let response = RackResponse::new(responses);
+
+                    response.show_connections(self, ui);
+                    response.show_dragged(self, ui);
+                    response.process(self);
+                });
+        });
     }
 
     pub fn process(&mut self, sample_rate: u32) -> Vec<Frame> {
