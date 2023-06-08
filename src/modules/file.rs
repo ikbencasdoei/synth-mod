@@ -317,5 +317,21 @@ impl Module for File {
                 }
             });
         });
+
+        if !self.buffer.is_empty() {
+            ui.horizontal(|ui| {
+                let size = std::mem::size_of_val(self.buffer.as_slice());
+
+                let text = match size {
+                    usize::MIN..=999 => format!("{} bytes", size),
+                    1000..=999999 => format!("{:.1} kB", size as f32 / 1000.0),
+                    1000000..=999999999 => format!("{:.1} MB", size as f32 / 1000000.0),
+                    1000000000..=usize::MAX => format!("{:.1} GB", size as f32 / 1000000000.0),
+                    _ => String::new(),
+                };
+
+                ui.label(format!("{text}, todo: fix this"));
+            });
+        }
     }
 }
