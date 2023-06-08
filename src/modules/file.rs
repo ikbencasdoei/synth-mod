@@ -1,4 +1,8 @@
-use std::{io::ErrorKind, path::Path};
+use std::{
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    sync::mpsc::{Receiver, Sender},
+};
 
 use eframe::egui::{Slider, Ui};
 use rfd::FileDialog;
@@ -43,20 +47,32 @@ impl PortValueBoxed for Frame {
     }
 }
 
+enum Message {
+    Decoded(Option<Vec<Frame>>),
+    PickedFile(PathBuf),
+}
+
 pub struct File {
     pub buffer: Vec<Frame>,
     pub seek: usize,
     pub playing: bool,
     path: String,
+    sender: Sender<Message>,
+    receiver: Receiver<Message>,
+    loading: bool,
 }
 
 impl Default for File {
     fn default() -> Self {
+        let (sender, receiver) = std::sync::mpsc::channel();
         Self {
-            buffer: Default::default(),
-            seek: Default::default(),
-            playing: Default::default(),
+            buffer: Vec::new(),
+            seek: 0,
+            playing: false,
             path: String::new(),
+            sender,
+            receiver,
+            loading: false,
         }
     }
 }
@@ -181,15 +197,32 @@ impl File {
         Some(buffer)
     }
 
-    pub fn try_decode(&mut self, path: &str) {
-        self.path = path.to_string();
-        self.update()
+    fn update(&mut self) {
+        self.loading = true;
+        std::thread::spawn({
+            let sender = self.sender.clone();
+            let path = self.path.clone();
+            move || {
+                sender.send(Message::Decoded(Self::decode(&path))).ok();
+            }
+        });
     }
 
-    pub fn update(&mut self) {
-        if let Some(buffer) = Self::decode(&self.path) {
-            self.buffer = buffer;
+    fn open_picker(&self) {
+        let mut dialog = FileDialog::new().add_filter("audio", &["mp3"]);
+
+        if !self.path.is_empty() {
+            dialog = dialog.set_directory(&self.path);
         }
+
+        std::thread::spawn({
+            let sender = self.sender.clone();
+            move || {
+                if let Some(path) = dialog.pick_file() {
+                    sender.send(Message::PickedFile(path)).ok();
+                }
+            }
+        });
     }
 }
 
@@ -204,6 +237,22 @@ impl Module for File {
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
+        let messages = self.receiver.try_iter().collect::<Vec<_>>();
+        for message in messages {
+            match message {
+                Message::Decoded(buffer) => {
+                    if let Some(buffer) = buffer {
+                        self.buffer = buffer;
+                    }
+                    self.loading = false
+                }
+                Message::PickedFile(path) => {
+                    self.path = path.to_string_lossy().to_string();
+                    self.update();
+                }
+            }
+        }
+
         let frame = if self.playing {
             if self.seek < self.buffer.len() {
                 self.seek += 1;
@@ -230,25 +279,25 @@ impl Module for File {
             }
 
             if ui.button("pick").clicked() {
-                let mut dialog = FileDialog::new().add_filter("audio", &["mp3"]);
+                self.open_picker()
+            }
 
-                if !self.path.is_empty() {
-                    dialog = dialog.set_directory(&self.path);
-                }
-
-                if let Some(path) = dialog.pick_file() {
-                    self.try_decode(&path.to_string_lossy())
-                }
+            if self.loading {
+                ui.spinner();
             }
         });
 
         ui.horizontal(|ui| {
-            let secs = self.seek as f32 / ctx.sample_rate as f32;
+            let progress = self.seek as f32 / ctx.sample_rate as f32;
+            let total = self.buffer.len() as f32 / ctx.sample_rate as f32;
             ui.label(format!(
-                "{:02}:{:02}:{:02}",
-                (secs as u32 / 60) % 60,
-                secs as u32 % 60,
-                (secs * 100.0 % 100.0).floor()
+                "{:02}:{:02}.{:01}/{:02}:{:02}.{:01}",
+                (progress as u32 / 60) % 60,
+                progress as u32 % 60,
+                (progress * 10.0 % 10.0).floor(),
+                (total as u32 / 60) % 60,
+                total as u32 % 60,
+                (total * 10.0 % 10.0).floor()
             ));
 
             ui.scope(|ui| {
@@ -256,8 +305,10 @@ impl Module for File {
 
                 let mut seek = self.seek;
 
-                let response =
-                    ui.add(Slider::new(&mut seek, 0..=self.buffer.len().max(1)).show_value(false));
+                let response = ui.add_enabled(
+                    !self.buffer.is_empty(),
+                    Slider::new(&mut seek, 0..=self.buffer.len().max(1)).show_value(false),
+                );
 
                 if response.drag_released() {
                     self.seek = seek;
