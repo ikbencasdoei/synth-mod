@@ -293,13 +293,13 @@ impl Module for File {
             let progress = self.seek as f32 / ctx.sample_rate as f32;
             let total = self.buffer.len() as f32 / ctx.sample_rate as f32;
             ui.label(format!(
-                "{:02}:{:02}.{:01}/{:02}:{:02}.{:01}",
+                "{:02}:{:02}.{:02}/{:02}:{:02}.{:02}",
                 (progress as u32 / 60) % 60,
                 progress as u32 % 60,
-                (progress * 10.0 % 10.0).floor(),
+                (progress * 100.0 % 100.0).floor(),
                 (total as u32 / 60) % 60,
                 total as u32 % 60,
-                (total * 10.0 % 10.0).floor()
+                (total * 100.0 % 100.0).floor()
             ));
 
             ui.scope(|ui| {
