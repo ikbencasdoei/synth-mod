@@ -129,7 +129,7 @@ impl RackResponse {
 
         //remove removed
         if let Some(removed) = self.get_removed_instance() {
-            rack.remove_module(removed.handle)
+            rack.remove_instance(removed.handle)
         }
     }
 }

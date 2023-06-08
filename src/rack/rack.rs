@@ -37,11 +37,11 @@ impl Panel {
         }
     }
 
-    pub fn add_module(&mut self, handle: InstanceHandle) {
+    pub fn add_instance(&mut self, handle: InstanceHandle) {
         self.instances.push(handle)
     }
 
-    pub fn remove_module(&mut self, handle: InstanceHandle) {
+    pub fn remove_instance(&mut self, handle: InstanceHandle) {
         self.instances.retain(|&instance| instance != handle)
     }
 
@@ -138,7 +138,7 @@ impl Rack {
         let instance = Instance::from_description(description);
         let handle = instance.handle;
         self.instances.insert(handle, instance);
-        self.panels.get_mut(panel).unwrap().add_module(handle);
+        self.panels.get_mut(panel).unwrap().add_instance(handle);
         handle
     }
 
@@ -151,11 +151,11 @@ impl Rack {
         self.add_module(&T::describe(), 0).as_typed()
     }
 
-    pub fn remove_module(&mut self, handle: InstanceHandle) {
+    pub fn remove_instance(&mut self, handle: InstanceHandle) {
         self.io.remove_instance(handle);
 
         for panel in self.panels.iter_mut() {
-            panel.remove_module(handle)
+            panel.remove_instance(handle)
         }
 
         self.instances.remove(&handle);
