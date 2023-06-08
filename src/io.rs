@@ -164,6 +164,21 @@ impl Io {
             self.disconnect(handle, input)
         }
     }
+
+    pub fn instance_ports(&self, instance: InstanceHandle) -> Vec<PortHandle> {
+        self.connections
+            .iter()
+            .flat_map(|(from, connections)| connections.iter().chain(std::iter::once(from)))
+            .filter(|handle| handle.instance == instance)
+            .copied()
+            .collect()
+    }
+
+    pub fn remove_instance(&mut self, instance: InstanceHandle) {
+        for port in self.instance_ports(instance) {
+            self.clear_port(port)
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

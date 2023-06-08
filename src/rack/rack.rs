@@ -152,9 +152,7 @@ impl Rack {
     }
 
     pub fn remove_module(&mut self, handle: InstanceHandle) {
-        if !self.instances.contains_key(&handle) {
-            return;
-        }
+        self.io.remove_instance(handle);
 
         for panel in self.panels.iter_mut() {
             panel.remove_module(handle)
