@@ -271,8 +271,10 @@ impl Module for File {
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.selectable_value(&mut self.playing, true, "▶");
-            ui.selectable_value(&mut self.playing, false, "⏸");
+            ui.add_enabled_ui(!self.buffer.is_empty(), |ui| {
+                ui.selectable_value(&mut self.playing, true, "▶");
+                ui.selectable_value(&mut self.playing, false, "⏸");
+            });
 
             if ui.text_edit_singleline(&mut self.path).changed() {
                 self.update();
