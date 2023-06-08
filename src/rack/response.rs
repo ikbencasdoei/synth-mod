@@ -12,7 +12,6 @@ use crate::{
         port::PortResponse,
     },
     io::ConnectResult,
-    module::PortType,
 };
 
 pub struct RackResponse {
@@ -43,10 +42,6 @@ impl RackResponse {
         self.get_port(|port| port.dragging)
     }
 
-    pub fn get_cleared_port(&self) -> Option<&PortResponse> {
-        self.get_port(|port| port.cleared)
-    }
-
     pub fn get_removed_instance(&self) -> Option<&InstanceResponse> {
         self.responses.values().find(|response| response.remove)
     }
@@ -56,22 +51,20 @@ impl RackResponse {
     }
 
     pub fn show_connections(&self, rack: &Rack, ui: &mut Ui) {
-        for instance in rack.instances.values() {
-            for port in instance.outputs.values() {
-                for &to_port in port.connections.iter() {
-                    let from_response = self.get_response(instance.handle).unwrap();
-                    let to_response = self.get_response(to_port.instance).unwrap();
+        for (&from, connections) in rack.io.connections.iter() {
+            for &to in connections.iter() {
+                let from_response = self.get_response(from.instance).unwrap();
+                let to_response = self.get_response(to.instance).unwrap();
 
-                    let from_port_response = from_response.get_port_response(port.handle).unwrap();
-                    let to_port_response = to_response.get_port_response(to_port).unwrap();
+                let from_port_response = from_response.get_port_response(from).unwrap();
+                let to_port_response = to_response.get_port_response(to).unwrap();
 
-                    draw_rope(
-                        from_port_response.position,
-                        to_port_response.position,
-                        ui,
-                        Stroke::new(2.0, Hsva::new(0.0, 0.0, 1.0, 0.1)),
-                    );
-                }
+                draw_rope(
+                    from_port_response.position,
+                    to_port_response.position,
+                    ui,
+                    Stroke::new(2.0, Hsva::new(0.0, 0.0, 1.0, 0.1)),
+                );
             }
         }
     }
@@ -131,34 +124,6 @@ impl RackResponse {
         if let Some(from) = self.get_released_port() {
             if let Some(to) = self.get_hovered_port() {
                 rack.connect(from.handle, to.handle).ok();
-            }
-        }
-
-        //disconnect connections when port clear is clicked
-        if let Some(cleared) = self.get_cleared_port() {
-            match cleared.description.port_type {
-                PortType::Input => {
-                    for &port in rack
-                        .get_port(cleared.handle)
-                        .unwrap()
-                        .connections
-                        .clone()
-                        .iter()
-                    {
-                        rack.disconnect(port, cleared.handle)
-                    }
-                }
-                PortType::Output => {
-                    for &port in rack
-                        .get_port(cleared.handle)
-                        .unwrap()
-                        .connections
-                        .clone()
-                        .iter()
-                    {
-                        rack.disconnect(cleared.handle, port)
-                    }
-                }
             }
         }
 

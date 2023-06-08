@@ -39,7 +39,7 @@ impl ConnectResult {
 #[derive(Default)]
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
-    connections: HashMap<PortHandle, HashSet<PortHandle>>,
+    pub connections: HashMap<PortHandle, HashSet<PortHandle>>,
     pub conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
 }
 
@@ -94,6 +94,7 @@ impl Io {
         self.set_output_dyn(PortHandle::new(P::id(), instance), Box::new(value))
     }
 
+    ///Verifies whether the provided input port is connected, and if it is, it returns the handle of the output port.
     pub fn input_connection(&self, input: PortHandle) -> Option<PortHandle> {
         for (from, connections) in self.connections.iter() {
             if connections.iter().any(|&value| value == input) {
@@ -147,6 +148,20 @@ impl Io {
         if let Some(connections) = self.connections.get_mut(&from) {
             connections.remove(&to);
             self.inputs.remove(&to);
+        }
+    }
+
+    pub fn output_connections(&self, handle: PortHandle) -> HashSet<PortHandle> {
+        self.connections.get(&handle).cloned().unwrap_or_default()
+    }
+
+    pub fn clear_port(&mut self, handle: PortHandle) {
+        if let Some(output) = self.input_connection(handle) {
+            self.disconnect(output, handle)
+        }
+
+        for input in self.output_connections(handle) {
+            self.disconnect(handle, input)
         }
     }
 }

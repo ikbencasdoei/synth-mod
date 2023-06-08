@@ -1,4 +1,7 @@
-use std::{any::Any, collections::HashMap};
+use std::{
+    any::Any,
+    collections::{HashMap, HashSet},
+};
 
 use eframe::{
     self,
@@ -24,7 +27,7 @@ pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<(Vec<InstanceHandle>, f32)>,
     definitions: Vec<ModuleDescription>,
-    io: Io,
+    pub io: Io,
 }
 
 impl Default for Rack {
@@ -91,49 +94,6 @@ impl Rack {
             panel.retain(|&instance| instance != handle)
         }
 
-        //remove connections
-        //connections from module
-        let connections_from = {
-            let module = self.instances.get(&handle).unwrap();
-            module
-                .outputs
-                .iter()
-                .map(|(&handle, port)| {
-                    (
-                        handle,
-                        port.connections.clone().into_iter().collect::<Vec<_>>(),
-                    )
-                })
-                .collect::<Vec<_>>()
-        };
-
-        for (from, connections) in connections_from {
-            for to in connections {
-                self.disconnect(from, to)
-            }
-        }
-
-        //connections to module
-        let connections_to = {
-            let module = self.instances.get(&handle).unwrap();
-            module
-                .inputs
-                .iter()
-                .map(|(&handle, port)| {
-                    (
-                        handle,
-                        port.connections.clone().into_iter().collect::<Vec<_>>(),
-                    )
-                })
-                .collect::<Vec<_>>()
-        };
-
-        for (to, connections) in connections_to {
-            for from in connections {
-                self.disconnect(from, to)
-            }
-        }
-
         self.instances.remove(&handle);
     }
 
@@ -149,14 +109,6 @@ impl Rack {
                     .connect(from, to)
                     .expect("io.can_connect should prevent this");
 
-                if let Some(from_port) = self.get_port_mut(from) {
-                    from_port.connections.insert(to);
-                }
-
-                if let Some(to_port) = self.get_port_mut(to) {
-                    to_port.connections.insert(from);
-                }
-
                 Ok(())
             }
         }
@@ -168,14 +120,6 @@ impl Rack {
 
     pub fn disconnect(&mut self, from: PortHandle, to: PortHandle) {
         self.io.disconnect(from, to);
-
-        if let Some(port) = self.get_port_mut(from) {
-            port.connections.remove(&to);
-        }
-
-        if let Some(port) = self.get_port_mut(to) {
-            port.connections.remove(&from);
-        }
     }
 
     pub fn get_instance(&self, handle: InstanceHandle) -> Option<&Instance> {
@@ -198,11 +142,13 @@ impl Rack {
             .get_module_mut()
     }
 
+    #[allow(unused)]
     pub fn get_port(&self, handle: PortHandle) -> Option<&PortInstance> {
         let instance = self.get_instance(handle.instance)?;
         instance.get_port(handle)
     }
 
+    #[allow(unused)]
     pub fn get_port_mut(&mut self, handle: PortHandle) -> Option<&mut PortInstance> {
         let instance = self.get_instance_mut(handle.instance)?;
         instance.get_port_mut(handle)
@@ -335,5 +281,21 @@ impl<'a> ShowContext<'a> {
 
     pub fn set_input<P: Port>(&mut self, handle: PortHandle, value: P::Type) {
         self.io.set_input_dyn(handle, Box::new(value))
+    }
+
+    pub fn input_connections(&self, handle: PortHandle) -> Option<PortHandle> {
+        self.io.input_connection(handle)
+    }
+
+    pub fn output_connections(&self, handle: PortHandle) -> HashSet<PortHandle> {
+        self.io.output_connections(handle)
+    }
+
+    pub fn has_connection(&self, handle: PortHandle) -> bool {
+        (!self.output_connections(handle).is_empty()) || self.input_connections(handle).is_some()
+    }
+
+    pub fn clear_port(&mut self, handle: PortHandle) {
+        self.io.clear_port(handle)
     }
 }

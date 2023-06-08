@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use eframe::{
     egui::{self, Button, Layout, Margin, RichText, Sense, Ui},
     emath::Align,
@@ -17,7 +15,6 @@ pub struct PortInstance {
     pub description: PortDescription,
     dragging: bool,
     pub handle: PortHandle,
-    pub connections: HashSet<PortHandle>,
 }
 
 impl PortInstance {
@@ -26,7 +23,6 @@ impl PortInstance {
             description: description.clone(),
             dragging: false,
             handle: PortHandle::new(description.id, instance),
-            connections: HashSet::new(),
         }
     }
 
@@ -42,7 +38,7 @@ impl PortInstance {
                     ui.label(RichText::new(self.description.type_name).color(Color32::LIGHT_BLUE));
 
                     if let PortType::Input = self.description.port_type {
-                        if self.connections.is_empty() {
+                        if !ctx.has_connection(self.handle) {
                             self.description
                                 .closure_edit
                                 .as_ref()
@@ -56,9 +52,10 @@ impl PortInstance {
 
                     self.show_port_visual(&mut response, ctx, ui);
 
-                    if !self.connections.is_empty() && ui.add(Button::new("❌").small()).clicked()
+                    if ctx.has_connection(self.handle)
+                        && ui.add(Button::new("❌").small()).clicked()
                     {
-                        response.cleared = true
+                        ctx.clear_port(self.handle)
                     }
                 });
             });
@@ -115,7 +112,7 @@ impl PortInstance {
                     ui.painter()
                         .circle(rect.center(), inner_radius, visuals.bg_fill, stroke);
 
-                    let value: f32 = if !self.connections.is_empty() {
+                    let value: f32 = if ctx.has_connection(self.handle) {
                         if let Some(boxed) = ctx.get_input_boxed(self.handle) {
                             boxed.as_value()
                         } else {
@@ -132,7 +129,7 @@ impl PortInstance {
                     );
                 }
                 PortType::Output => {
-                    if self.connections.is_empty() {
+                    if !ctx.has_connection(self.handle) {
                         ui.painter().circle_filled(
                             rect.center(),
                             inner_radius,
@@ -147,7 +144,7 @@ impl PortInstance {
         }
 
         if let PortType::Input = self.description.port_type {
-            if self.connections.is_empty() {
+            if !ctx.has_connection(self.handle) {
                 port_response.on_hover_text_at_pointer("Input");
             } else {
                 port_response.on_hover_text_at_pointer(self
@@ -169,7 +166,6 @@ pub struct PortResponse {
     pub released: bool,
     pub hovered: bool,
     pub handle: PortHandle,
-    pub cleared: bool,
 }
 
 impl PortResponse {
@@ -181,7 +177,6 @@ impl PortResponse {
             released: false,
             hovered: false,
             handle: port.handle,
-            cleared: false,
         }
     }
 }

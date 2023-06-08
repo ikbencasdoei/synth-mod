@@ -60,12 +60,14 @@ impl Instance {
         }
     }
 
+    #[allow(unused)]
     pub fn get_port(&self, handle: PortHandle) -> Option<&PortInstance> {
         self.inputs
             .get(&handle)
             .or_else(|| self.outputs.get(&handle))
     }
 
+    #[allow(unused)]
     pub fn get_port_mut(&mut self, handle: PortHandle) -> Option<&mut PortInstance> {
         self.inputs
             .get_mut(&handle)
