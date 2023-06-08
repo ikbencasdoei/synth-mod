@@ -173,6 +173,7 @@ impl Rack {
                     ui.horizontal_centered(|ui| {
                         for (i, (panel, width)) in self.panels.clone().into_iter().enumerate() {
                             ui.vertical(|ui| {
+                                ui.set_min_width(100.0);
                                 ui.set_max_width(width);
 
                                 for handle in panel.iter() {
