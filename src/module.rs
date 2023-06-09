@@ -1,6 +1,5 @@
 use std::{
     any::{Any, TypeId},
-    collections::HashMap,
     fmt::Debug,
 };
 
@@ -8,7 +7,7 @@ use dyn_clone::DynClone;
 use eframe::{self, egui::Ui};
 
 use crate::{
-    io::{ConnectResult, PortHandle},
+    io::{ConnectResult, Conversion, PortHandle},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -76,6 +75,13 @@ impl ModuleDescription {
         self.inputs.push(description);
         self
     }
+
+    pub fn get_conversions(&self) -> Vec<&Conversion> {
+        self.inputs
+            .iter()
+            .flat_map(|input| input.conversions.iter())
+            .collect()
+    }
 }
 
 pub trait PortValueBoxed: Any + DynClone + 'static {
@@ -141,9 +147,9 @@ impl Clone for Box<dyn InputClosureValue> {
     }
 }
 
-pub trait ConversionClosure: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone {}
+pub trait ConversionClosure: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone + 'static {}
 
-impl<F: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone> ConversionClosure for F {}
+impl<F: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone + 'static> ConversionClosure for F {}
 
 impl Clone for Box<dyn ConversionClosure> {
     fn clone(&self) -> Self {
@@ -159,7 +165,7 @@ pub struct PortDescription {
     pub id: PortId,
     pub closure_edit: Option<Box<dyn InputClosureEdit>>,
     pub closure_value: Option<Box<dyn InputClosureValue>>,
-    pub conversions: HashMap<TypeId, Box<dyn ConversionClosure>>,
+    pub conversions: Vec<Conversion>,
 }
 
 impl PortDescription {
@@ -182,7 +188,7 @@ impl PortDescription {
                 let value = ctx.get_input::<I>(handle);
                 value.to_string()
             })),
-            conversions: HashMap::new(),
+            conversions: Vec::new(),
         }
     }
 
@@ -194,7 +200,7 @@ impl PortDescription {
             id: I::id(),
             closure_edit: None,
             closure_value: None,
-            conversions: HashMap::new(),
+            conversions: Vec::new(),
         }
     }
 
@@ -205,14 +211,9 @@ impl PortDescription {
         if TypeId::of::<O>() != self.id.value_type {
             panic!("incorrect conversion output")
         }
+        let conversion = Conversion::new_input(self.id, closure);
 
-        self.conversions.insert(
-            TypeId::of::<I>(),
-            Box::new(move |boxed: Box<dyn Any>| {
-                let any = &*boxed as &dyn Any;
-                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
-            }),
-        );
+        self.conversions.push(conversion.unwrap());
 
         self
     }

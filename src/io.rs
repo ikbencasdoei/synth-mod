@@ -69,11 +69,13 @@ impl Io {
         } {
             Some(result.clone())
         } else {
+            let port_id = I::id();
             let boxed: Box<dyn Any> = (self
                 .conversions
                 .get(&ConversionId {
-                    port: I::id(),
-                    input_type: (*boxed).type_id(),
+                    to_port: Some(port_id),
+                    from_type: (*boxed).type_id(),
+                    to_type: port_id.value_type,
                 })
                 .expect("should have this"))(boxed);
 
@@ -125,10 +127,10 @@ impl Io {
         let mut result = from.is_compatible(to);
 
         if let ConnectResult::InCompatible = result {
-            if self.conversions.contains_key(&ConversionId {
-                port: to.id,
-                input_type: from.id.value_type,
-            }) {
+            if self
+                .conversions
+                .contains_key(&ConversionId::from_ports(from, to))
+            {
                 result = ConnectResult::Ok;
             }
         }
@@ -179,6 +181,10 @@ impl Io {
             self.clear_port(port)
         }
     }
+
+    pub fn add_conversion(&mut self, conversion: Conversion) {
+        self.conversions.insert(conversion.id, conversion.closure);
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -199,6 +205,46 @@ impl PortHandle {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct ConversionId {
-    pub port: PortId,
-    pub input_type: TypeId,
+    pub from_type: TypeId,
+    pub to_type: TypeId,
+    pub to_port: Option<PortId>,
+}
+
+impl ConversionId {
+    pub fn from_ports(from: PortHandle, to: PortHandle) -> Self {
+        Self {
+            from_type: from.id.value_type,
+            to_type: to.id.value_type,
+            to_port: Some(to.id),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Conversion {
+    pub id: ConversionId,
+    closure: Box<dyn ConversionClosure>,
+}
+
+impl Conversion {
+    pub fn new_input<I: PortValueBoxed + Clone, O: PortValueBoxed>(
+        port: PortId,
+        closure: impl Fn(I) -> O + Clone + 'static,
+    ) -> Option<Self> {
+        if TypeId::of::<O>() != port.value_type {
+            return None;
+        }
+
+        Some(Self {
+            id: ConversionId {
+                from_type: TypeId::of::<I>(),
+                to_type: port.value_type,
+                to_port: Some(port),
+            },
+            closure: Box::new(move |boxed: Box<dyn Any>| {
+                let any = &*boxed as &dyn Any;
+                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
+            }),
+        })
+    }
 }

@@ -15,7 +15,7 @@ use crate::{
         instance::{Instance, InstanceHandle, InstanceResponse, TypedInstanceHandle},
         port::PortInstance,
     },
-    io::{ConnectResult, ConversionId, Io, PortHandle},
+    io::{ConnectResult, Io, PortHandle},
     module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
     modules::{
         audio::Audio, file::File, filter::Filter, keyboard::Keyboard, ops::Operation,
@@ -122,17 +122,11 @@ impl Default for Rack {
 impl Rack {
     pub fn init_module<T: Module>(&mut self) {
         let def = T::describe();
-        for input in def.inputs.iter() {
-            for (type_id, closure) in &input.conversions {
-                self.io.conversions.insert(
-                    ConversionId {
-                        port: input.id,
-                        input_type: *type_id,
-                    },
-                    closure.clone(),
-                );
-            }
+
+        for conversion in def.get_conversions() {
+            self.io.add_conversion(conversion.clone())
         }
+
         self.definitions.push(def)
     }
 
