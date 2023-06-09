@@ -8,12 +8,13 @@ use crate::{
     module::{ConversionClosure, Input, Port, PortId, PortValueBoxed},
 };
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ConnectResult {
     Ok,
     Replace(PortHandle, PortHandle),
     SameInstance,
     InCompatible,
+    Conversion,
 }
 
 impl ConnectResult {
@@ -23,6 +24,7 @@ impl ConnectResult {
             ConnectResult::Replace(..) => Ok(self),
             ConnectResult::SameInstance => Err(self),
             ConnectResult::InCompatible => Err(self),
+            ConnectResult::Conversion => Ok(self),
         }
     }
 
@@ -32,6 +34,7 @@ impl ConnectResult {
             ConnectResult::Replace(..) => "replace",
             ConnectResult::SameInstance => "same instance",
             ConnectResult::InCompatible => "incompatible",
+            ConnectResult::Conversion => "convert type",
         }
     }
 }
@@ -40,7 +43,7 @@ impl ConnectResult {
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
     pub connections: HashMap<PortHandle, HashSet<PortHandle>>,
-    pub conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
+    conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
 }
 
 impl Io {
@@ -143,11 +146,11 @@ impl Io {
             if self.conversions.contains_key(&conversion_id)
                 || self.conversions.contains_key(&conversion_id.into_general())
             {
-                result = ConnectResult::Ok;
+                result = ConnectResult::Conversion;
             }
         }
 
-        if let ConnectResult::Ok = result {
+        if let ConnectResult::Ok | ConnectResult::Conversion = result {
             if let Some(connection) = self.input_connection(to) {
                 ConnectResult::Replace(connection, to)
             } else {

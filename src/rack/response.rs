@@ -82,7 +82,7 @@ impl RackResponse {
                             |ui| ui.label("✅connect"),
                         );
                     }
-                    ConnectResult::Replace(..) => {
+                    ConnectResult::Replace(..) | ConnectResult::Conversion => {
                         egui::containers::show_tooltip_at_pointer(
                             ui.ctx(),
                             Id::new(hovered.description.id),
@@ -106,7 +106,9 @@ impl RackResponse {
             let stroke = if let Some(can_connect) = can_connect {
                 match can_connect {
                     ConnectResult::Ok => Stroke::new(2.0, Color32::GREEN),
-                    ConnectResult::Replace(..) => Stroke::new(2.0, Color32::GOLD),
+                    ConnectResult::Replace(..) | ConnectResult::Conversion => {
+                        Stroke::new(2.0, Color32::GOLD)
+                    }
                     _ => Stroke::new(2.0, Color32::RED),
                 }
             } else {
