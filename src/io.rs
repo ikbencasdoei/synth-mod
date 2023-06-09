@@ -69,19 +69,36 @@ impl Io {
         } {
             Some(result.clone())
         } else {
-            let port_id = I::id();
-            let boxed: Box<dyn Any> = (self
-                .conversions
-                .get(&ConversionId {
-                    to_port: Some(port_id),
-                    from_type: (*boxed).type_id(),
-                    to_type: port_id.value_type,
-                })
-                .expect("should have this"))(boxed);
-
-            let any = &*boxed;
-            Some(any.downcast_ref::<I::Type>().unwrap().clone())
+            Some(self.try_convert::<I>(boxed).expect("should have this"))
         }
+    }
+
+    fn try_convert<I: Input>(&self, boxed: Box<dyn PortValueBoxed>) -> Option<I::Type> {
+        let conversion = self.get_conversion::<I>((*boxed).type_id())?;
+        let converted: Box<dyn Any> = (conversion)(boxed);
+        let any = &*converted;
+        Some(
+            any.downcast_ref::<I::Type>()
+                .expect("should be correct type")
+                .clone(),
+        )
+    }
+
+    fn get_conversion<I: Input>(&self, from_type: TypeId) -> Option<&Box<dyn ConversionClosure>> {
+        let id = I::id();
+        self.conversions
+            .get(&ConversionId {
+                from_type,
+                to_type: id.value_type,
+                to_port: Some(id),
+            })
+            .or_else(|| {
+                self.conversions.get(&ConversionId {
+                    from_type: from_type,
+                    to_type: id.value_type,
+                    to_port: None,
+                })
+            })
     }
 
     pub fn get_input<I: Input>(&self, instance: InstanceHandle) -> I::Type {
