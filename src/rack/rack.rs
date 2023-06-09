@@ -18,8 +18,8 @@ use crate::{
     io::{ConnectResult, ConversionId, Io, PortHandle},
     module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
     modules::{
-        audio::Audio, file::File, keyboard::Keyboard, ops::Operation, oscillator::Oscillator,
-        scope::Scope, value::Value,
+        audio::Audio, file::File, filter::Filter, keyboard::Keyboard, ops::Operation,
+        oscillator::Oscillator, scope::Scope, value::Value,
     },
 };
 
@@ -113,6 +113,7 @@ impl Default for Rack {
         new.init_module::<Scope>();
         new.init_module::<Keyboard>();
         new.init_module::<File>();
+        new.init_module::<Filter>();
 
         new
     }

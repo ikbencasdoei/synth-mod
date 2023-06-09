@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["Cas Brugman <casbrugman@hotmail.nl>"]
 
 [dependencies]
+biquad = "0.4.2"
 cpal = "0.15.2"
 dyn-clone = "1.0.11"
 indexmap = "1.9.3"
