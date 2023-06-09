@@ -85,6 +85,9 @@ impl ModuleDescription {
 }
 
 pub trait PortValueBoxed: Any + DynClone + 'static {
+    fn name() -> &'static str
+    where
+        Self: Sized;
     fn to_string(&self) -> String;
     fn as_value(&self) -> f32;
 }
@@ -103,7 +106,7 @@ pub trait Port: 'static {
     fn name() -> &'static str;
 
     fn type_name() -> &'static str {
-        std::any::type_name::<Self::Type>()
+        Self::Type::name()
     }
 
     fn id() -> PortId

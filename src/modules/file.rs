@@ -18,7 +18,7 @@ use symphonia::core::{
 
 use crate::{
     frame::Frame,
-    module::{Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Module, ModuleDescription, Port},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -32,20 +32,6 @@ impl Port for FileOutput {
     }
 }
 
-impl PortValueBoxed for Frame {
-    fn to_string(&self) -> String {
-        match self {
-            Frame::Mono(sample) => format!("Mono({})", sample),
-            Frame::Stereo(a, b) => {
-                format!("Stereo({},{})", a, b)
-            }
-        }
-    }
-
-    fn as_value(&self) -> f32 {
-        self.as_f32_mono()
-    }
-}
 
 enum Message {
     Decoded(Option<Vec<Frame>>),

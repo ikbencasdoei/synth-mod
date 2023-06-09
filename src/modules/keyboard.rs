@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    module::{Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Module, ModuleDescription, Port},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -107,20 +107,6 @@ impl Port for KeyboardPressedOutput {
 
     fn name() -> &'static str {
         "pressed"
-    }
-}
-
-impl PortValueBoxed for bool {
-    fn to_string(&self) -> String {
-        format!("{}", self)
-    }
-
-    fn as_value(&self) -> f32 {
-        if *self {
-            1.0
-        } else {
-            0.0
-        }
     }
 }
 

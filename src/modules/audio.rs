@@ -2,18 +2,9 @@ use eframe::egui::{self, Ui};
 
 use crate::{
     frame::Frame,
-    module::{Input, Module, ModuleDescription, Port, PortDescription, PortValueBoxed},
+    module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
-
-impl PortValueBoxed for f32 {
-    fn to_string(&self) -> String {
-        format!("{:.2}", self)
-    }
-    fn as_value(&self) -> f32 {
-        *self
-    }
-}
 
 pub struct AudioInput;
 

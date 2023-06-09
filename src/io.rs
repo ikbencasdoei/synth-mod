@@ -86,19 +86,14 @@ impl Io {
 
     fn get_conversion<I: Input>(&self, from_type: TypeId) -> Option<&Box<dyn ConversionClosure>> {
         let id = I::id();
+        let conversion_id = ConversionId {
+            from_type,
+            to_type: id.value_type,
+            to_port: Some(id),
+        };
         self.conversions
-            .get(&ConversionId {
-                from_type,
-                to_type: id.value_type,
-                to_port: Some(id),
-            })
-            .or_else(|| {
-                self.conversions.get(&ConversionId {
-                    from_type: from_type,
-                    to_type: id.value_type,
-                    to_port: None,
-                })
-            })
+            .get(&conversion_id)
+            .or_else(|| self.conversions.get(&conversion_id.into_general()))
     }
 
     pub fn get_input<I: Input>(&self, instance: InstanceHandle) -> I::Type {
@@ -144,9 +139,9 @@ impl Io {
         let mut result = from.is_compatible(to);
 
         if let ConnectResult::InCompatible = result {
-            if self
-                .conversions
-                .contains_key(&ConversionId::from_ports(from, to))
+            let conversion_id = ConversionId::from_ports(from, to);
+            if self.conversions.contains_key(&conversion_id)
+                || self.conversions.contains_key(&conversion_id.into_general())
             {
                 result = ConnectResult::Ok;
             }
@@ -235,6 +230,14 @@ impl ConversionId {
             to_port: Some(to.id),
         }
     }
+
+    pub fn into_general(self) -> Self {
+        Self {
+            from_type: self.from_type,
+            to_type: self.to_type,
+            to_port: None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -263,5 +266,21 @@ impl Conversion {
                 Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
             }),
         })
+    }
+
+    pub fn new_type<I: PortValueBoxed + Clone, O: PortValueBoxed>(
+        closure: impl Fn(I) -> O + Clone + 'static,
+    ) -> Self {
+        Self {
+            id: ConversionId {
+                from_type: TypeId::of::<I>(),
+                to_type: TypeId::of::<O>(),
+                to_port: None,
+            },
+            closure: Box::new(move |boxed: Box<dyn Any>| {
+                let any = &*boxed as &dyn Any;
+                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
+            }),
+        }
     }
 }

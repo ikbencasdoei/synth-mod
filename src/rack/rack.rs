@@ -21,6 +21,7 @@ use crate::{
         audio::Audio, file::File, filter::Filter, keyboard::Keyboard, ops::Operation,
         oscillator::Oscillator, scope::Scope, value::Value,
     },
+    types::{Type, TypeDefinitionDyn},
 };
 
 #[derive(Clone)]
@@ -69,7 +70,7 @@ impl Panel {
             }
 
             ui.menu_button("➕ Module", |ui| {
-                for definition in rack.definitions.clone().iter() {
+                for definition in rack.modules.clone().iter() {
                     if ui.button(&definition.name).clicked() {
                         rack.add_module(definition, index);
                         ui.close_menu();
@@ -93,7 +94,8 @@ impl Panel {
 pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<Panel>,
-    definitions: Vec<ModuleDescription>,
+    modules: Vec<ModuleDescription>,
+    types: Vec<TypeDefinitionDyn>,
     pub io: Io,
 }
 
@@ -102,9 +104,14 @@ impl Default for Rack {
         let mut new = Self {
             instances: Default::default(),
             panels: Vec::new(),
-            definitions: Default::default(),
+            modules: Vec::new(),
+            types: Vec::new(),
             io: Io::default(),
         };
+
+        new.init_type::<f32>();
+        new.init_type::<bool>();
+        new.init_type::<Frame>();
 
         new.init_module::<Oscillator>();
         new.init_module::<Audio>();
@@ -120,14 +127,24 @@ impl Default for Rack {
 }
 
 impl Rack {
-    pub fn init_module<T: Module>(&mut self) {
+    fn init_type<T: Type>(&mut self) {
+        let definition = T::define().into_dyn();
+
+        for conversion in definition.conversions.iter() {
+            self.io.add_conversion(conversion.clone())
+        }
+
+        self.types.push(definition)
+    }
+
+    fn init_module<T: Module>(&mut self) {
         let def = T::describe();
 
         for conversion in def.get_conversions() {
             self.io.add_conversion(conversion.clone())
         }
 
-        self.definitions.push(def)
+        self.modules.push(def)
     }
 
     pub fn add_module(&mut self, description: &ModuleDescription, panel: usize) -> InstanceHandle {

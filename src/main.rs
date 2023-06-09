@@ -10,6 +10,7 @@ mod module;
 mod modules;
 mod output;
 mod rack;
+mod types;
 
 use app::App;
 
