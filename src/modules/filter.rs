@@ -142,7 +142,7 @@ impl Module for Filter {
             if ui
                 .add(
                     egui::DragValue::new(&mut self.cutoff)
-                        .clamp_range(1.0..=f32::MAX)
+                        .clamp_range(10.0..=f32::MAX)
                         .speed(1.0)
                         .suffix(" Hz"),
                 )
