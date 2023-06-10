@@ -93,8 +93,6 @@ impl Module for Scope {
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
-        let frame = ctx.get_input::<ScopeInput>();
-
         match self.state {
             State::Updating { pos } => {
                 if pos >= self.size {
@@ -103,6 +101,7 @@ impl Module for Scope {
                         self.buffer.resize(self.size, 0.0)
                     }
                 } else {
+                    let frame = ctx.get_input::<ScopeInput>();
                     if self.buffer.len() > pos {
                         *self.buffer.get_mut(pos).unwrap() = frame;
                     } else {
