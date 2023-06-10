@@ -139,14 +139,14 @@ impl Default for Keyboard {
 }
 
 impl Module for Keyboard {
-    fn describe() -> ModuleDescription
+    fn describe() -> ModuleDescription<Self>
     where
         Self: Sized,
     {
         ModuleDescription::new(Keyboard::default)
-            .set_name("🎹 Keyboard")
-            .add_output::<KeyboardFreqOutput>()
-            .add_output::<KeyboardPressedOutput>()
+            .name("🎹 Keyboard")
+            .output::<KeyboardFreqOutput>()
+            .output::<KeyboardPressedOutput>()
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

@@ -214,13 +214,13 @@ impl File {
 }
 
 impl Module for File {
-    fn describe() -> crate::module::ModuleDescription
+    fn describe() -> crate::module::ModuleDescription<Self>
     where
         Self: Sized,
     {
         ModuleDescription::new(File::default)
-            .set_name("📁 File")
-            .add_output::<FileOutput>()
+            .name("📁 File")
+            .output::<FileOutput>()
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

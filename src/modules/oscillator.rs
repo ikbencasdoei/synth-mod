@@ -80,11 +80,11 @@ impl Default for Oscillator {
 }
 
 impl Module for Oscillator {
-    fn describe() -> ModuleDescription {
+    fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(Oscillator::default)
-            .set_name("📉 Oscillator")
-            .add_input::<FrequencyInput>()
-            .add_output::<FrameOutput>()
+            .name("📉 Oscillator")
+            .input::<FrequencyInput>()
+            .output::<FrameOutput>()
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {

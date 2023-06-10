@@ -43,10 +43,10 @@ impl Audio {
 }
 
 impl Module for Audio {
-    fn describe() -> ModuleDescription {
+    fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(Audio::default)
-            .set_name("🔊 Audio Output")
-            .add_input_description(
+            .name("🔊 Audio Output")
+            .input_description(
                 PortDescription::new_input::<AudioInput>()
                     .add_conversion(|sample: f32| Frame::Mono(sample)),
             )

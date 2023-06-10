@@ -11,13 +11,13 @@ use uuid::Uuid;
 use super::port::{PortInstance, PortResponse};
 use crate::{
     io::PortHandle,
-    module::{Module, ModuleDescription},
+    module::{Module, ModuleDescriptionDyn},
     rack::rack::ShowContext,
 };
 
 pub struct Instance {
     pub module: Box<dyn Module>,
-    pub description: ModuleDescription,
+    pub description: ModuleDescriptionDyn,
     pub handle: InstanceHandle,
     pub inputs: IndexMap<PortHandle, PortInstance>,
     pub outputs: IndexMap<PortHandle, PortInstance>,
@@ -25,7 +25,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn from_description(description: &ModuleDescription) -> Self {
+    pub fn from_description(description: &ModuleDescriptionDyn) -> Self {
         let handle = InstanceHandle::new();
 
         let inputs = description

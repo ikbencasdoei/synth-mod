@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
     fmt::Debug,
+    marker::PhantomData,
 };
 
 use dyn_clone::DynClone;
@@ -12,7 +13,7 @@ use crate::{
 };
 
 pub trait Module: Any + 'static {
-    fn describe() -> ModuleDescription
+    fn describe() -> ModuleDescription<Self>
     where
         Self: Sized;
 
@@ -39,41 +40,21 @@ impl Clone for Box<dyn ModuleClosure> {
 }
 
 #[derive(Clone)]
-pub struct ModuleDescription {
+pub struct ModuleDescriptionDyn {
     pub name: String,
     pub instatiate: Box<dyn ModuleClosure>,
     pub inputs: Vec<PortDescription>,
     pub outputs: Vec<PortDescription>,
 }
 
-impl ModuleDescription {
-    pub fn new<M: Module>(closure: impl Fn() -> M + Clone + 'static) -> Self {
+impl ModuleDescriptionDyn {
+    pub fn from_typed<M>(description: ModuleDescription<M>) -> Self {
         Self {
-            name: std::any::type_name::<M>().to_string(),
-            instatiate: Box::new(move || Box::new(closure())),
-            inputs: Vec::new(),
-            outputs: Vec::new(),
+            name: description.name,
+            instatiate: description.instatiate,
+            inputs: description.inputs,
+            outputs: description.outputs,
         }
-    }
-
-    pub fn set_name(mut self, value: &str) -> Self {
-        self.name = value.to_string();
-        self
-    }
-
-    pub fn add_input<I: Input>(mut self) -> Self {
-        self.inputs.push(PortDescription::new_input::<I>());
-        self
-    }
-
-    pub fn add_output<I: Port>(mut self) -> Self {
-        self.outputs.push(PortDescription::new_output::<I>());
-        self
-    }
-
-    pub fn add_input_description(mut self, description: PortDescription) -> Self {
-        self.inputs.push(description);
-        self
     }
 
     pub fn get_conversions(&self) -> Vec<&Conversion> {
@@ -81,6 +62,50 @@ impl ModuleDescription {
             .iter()
             .flat_map(|input| input.conversions.iter())
             .collect()
+    }
+}
+
+pub struct ModuleDescription<M> {
+    name: String,
+    instatiate: Box<dyn ModuleClosure>,
+    inputs: Vec<PortDescription>,
+    outputs: Vec<PortDescription>,
+    phantom: PhantomData<M>,
+}
+
+impl<M: Module> ModuleDescription<M> {
+    pub fn new(closure: impl Fn() -> M + Clone + 'static) -> Self {
+        Self {
+            name: std::any::type_name::<M>().to_string(),
+            instatiate: Box::new(move || Box::new(closure())),
+            inputs: Vec::new(),
+            outputs: Vec::new(),
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn name(mut self, value: &str) -> Self {
+        self.name = value.to_string();
+        self
+    }
+
+    pub fn input<I: Input>(mut self) -> Self {
+        self.inputs.push(PortDescription::new_input::<I>());
+        self
+    }
+
+    pub fn output<I: Port>(mut self) -> Self {
+        self.outputs.push(PortDescription::new_output::<I>());
+        self
+    }
+
+    pub fn input_description(mut self, description: PortDescription) -> Self {
+        self.inputs.push(description);
+        self
+    }
+
+    pub fn into_dyn(self) -> ModuleDescriptionDyn {
+        ModuleDescriptionDyn::from_typed(self)
     }
 }
 

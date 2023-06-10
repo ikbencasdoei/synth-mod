@@ -114,12 +114,12 @@ where
     <InValueA<T> as Port>::Type: Mul<<InValueB<T> as Port>::Type, Output = T>,
     <InValueA<T> as Port>::Type: Div<<InValueB<T> as Port>::Type, Output = T>,
 {
-    fn describe() -> ModuleDescription {
+    fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(|| Operation::new())
-            .set_name(&format!("➕✖Operation<{}>", std::any::type_name::<T>()))
-            .add_input::<InValueA<T>>()
-            .add_input::<InValueB<T>>()
-            .add_output::<OutValue<T>>()
+            .name(&format!("➕✖Operation<{}>", std::any::type_name::<T>()))
+            .input::<InValueA<T>>()
+            .input::<InValueB<T>>()
+            .output::<OutValue<T>>()
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {

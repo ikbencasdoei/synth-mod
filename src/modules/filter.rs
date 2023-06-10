@@ -102,14 +102,14 @@ impl Filter {
 }
 
 impl Module for Filter {
-    fn describe() -> ModuleDescription
+    fn describe() -> ModuleDescription<Self>
     where
         Self: Sized,
     {
         ModuleDescription::new(|| Filter::new())
-            .set_name("🕳 Filter")
-            .add_input::<FilterInput>()
-            .add_output::<FilterOutput>()
+            .name("🕳 Filter")
+            .input::<FilterInput>()
+            .output::<FilterOutput>()
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

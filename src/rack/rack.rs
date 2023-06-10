@@ -16,7 +16,7 @@ use crate::{
         port::PortInstance,
     },
     io::{ConnectResult, Io, PortHandle},
-    module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Input, Module, ModuleDescriptionDyn, Port, PortValueBoxed},
     modules::{
         audio::Audio, file::File, filter::Filter, keyboard::Keyboard, ops::Operation,
         oscillator::Oscillator, scope::Scope, value::Value,
@@ -94,7 +94,7 @@ impl Panel {
 pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<Panel>,
-    modules: Vec<ModuleDescription>,
+    modules: Vec<ModuleDescriptionDyn>,
     types: Vec<TypeDefinitionDyn>,
     pub io: Io,
 }
@@ -138,7 +138,7 @@ impl Rack {
     }
 
     fn init_module<T: Module>(&mut self) {
-        let def = T::describe();
+        let def = T::describe().into_dyn();
 
         for conversion in def.get_conversions() {
             self.io.add_conversion(conversion.clone())
@@ -147,7 +147,11 @@ impl Rack {
         self.modules.push(def)
     }
 
-    pub fn add_module(&mut self, description: &ModuleDescription, panel: usize) -> InstanceHandle {
+    pub fn add_module(
+        &mut self,
+        description: &ModuleDescriptionDyn,
+        panel: usize,
+    ) -> InstanceHandle {
         let instance = Instance::from_description(description);
         let handle = instance.handle;
         self.instances.insert(handle, instance);
@@ -161,7 +165,7 @@ impl Rack {
             self.panels.push(Panel::new())
         }
 
-        self.add_module(&T::describe(), 0).as_typed()
+        self.add_module(&T::describe().into_dyn(), 0).as_typed()
     }
 
     pub fn remove_instance(&mut self, handle: InstanceHandle) {

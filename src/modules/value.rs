@@ -46,13 +46,13 @@ impl Edit for f32 {
 }
 
 impl<T: Edit + PortValueBoxed + Clone + Default> Module for Value<T> {
-    fn describe() -> ModuleDescription
+    fn describe() -> ModuleDescription<Self>
     where
         Self: Sized,
     {
         ModuleDescription::new(|| Value::<T>::new())
-            .set_name(&format!("⎙ Value<{}>", std::any::type_name::<T>()))
-            .add_output::<ValueOutput<T>>()
+            .name(&format!("⎙ Value<{}>", std::any::type_name::<T>()))
+            .output::<ValueOutput<T>>()
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
