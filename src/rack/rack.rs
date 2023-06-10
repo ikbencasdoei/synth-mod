@@ -5,7 +5,7 @@ use std::{
 
 use eframe::{
     self,
-    egui::{self, Context, Sense, Ui},
+    egui::{self, Button, Context, Sense, Ui},
 };
 
 use super::response::RackResponse;
@@ -232,15 +232,6 @@ impl Rack {
     }
 
     pub fn show(&mut self, ctx: &Context, sample_rate: u32) {
-        egui::SidePanel::right("rackplus")
-            .exact_width(70.0)
-            .resizable(false)
-            .show(ctx, |ui| {
-                if ui.button("➕ Panel").clicked() {
-                    self.panels.push(Panel::new())
-                }
-            });
-
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both()
                 .auto_shrink([false; 2])
@@ -251,6 +242,12 @@ impl Rack {
                         for (i, panel) in self.panels.clone().into_iter().enumerate() {
                             panel.show(self, i, ui, &mut responses, sample_rate);
                         }
+
+                        ui.vertical(|ui| {
+                            if ui.add(Button::new("➕ Panel").wrap(false)).clicked() {
+                                self.panels.push(Panel::new())
+                            }
+                        });
                     });
 
                     let response = RackResponse::new(responses);
