@@ -264,29 +264,39 @@ impl Rack {
     }
 
     pub fn process(&mut self, sample_rate: u32) -> Vec<Frame> {
-        for order in self.io.processing_order.clone() {
-            for handle in order {
-                let instance = self.instances.get_mut(&handle).unwrap();
-                let mut ctx = ProcessContext {
-                    sample_rate,
-                    handle: instance.handle,
-                    io: &mut self.io,
-                };
+        puffin::profile_function!("process");
 
-                instance.module.process(&mut ctx)
+        {
+            puffin::profile_scope!("modules");
+            for order in self.io.processing_order.clone() {
+                for handle in order {
+                    let instance = self.instances.get_mut(&handle).unwrap();
+                    let mut ctx = ProcessContext {
+                        sample_rate,
+                        handle: instance.handle,
+                        io: &mut self.io,
+                    };
+
+                    instance.module.process(&mut ctx)
+                }
             }
         }
 
-        let outputs = self
-            .instances
-            .values()
-            .flat_map(|instance| (&*instance.module as &dyn Any).downcast_ref::<Audio>())
-            .collect::<Vec<_>>();
+        let outputs = {
+            puffin::profile_scope!("&audio");
+            self.instances
+                .values()
+                .flat_map(|instance| (&*instance.module as &dyn Any).downcast_ref::<Audio>())
+                .collect::<Vec<_>>()
+        };
 
-        outputs
-            .iter()
-            .flat_map(|output| output.current_frame())
-            .collect::<Vec<_>>()
+        {
+            puffin::profile_scope!("current_frame");
+            outputs
+                .iter()
+                .flat_map(|output| output.current_frame())
+                .collect::<Vec<_>>()
+        }
     }
 }
 
@@ -352,6 +362,6 @@ impl<'a> ShowContext<'a> {
     }
 
     pub fn clear_port(&mut self, handle: PortHandle) {
-        self.io.clear_port(handle)
+        self.io.clear_port(handle);
     }
 }
