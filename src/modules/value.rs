@@ -51,7 +51,7 @@ impl<T: Edit + PortValueBoxed + Clone + Default> Module for Value<T> {
         Self: Sized,
     {
         ModuleDescription::new(|| Value::<T>::new())
-            .name(&format!("⎙ Value<{}>", std::any::type_name::<T>()))
+            .name(&format!("⎙ Value<{}>", T::name()))
             .port(PortDescription::<ValueOutput<T>>::output())
     }
 

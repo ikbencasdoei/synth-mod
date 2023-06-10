@@ -116,7 +116,7 @@ where
 {
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(|| Operation::new())
-            .name(&format!("➕✖Operation<{}>", std::any::type_name::<T>()))
+            .name(&format!("➕✖Operation<{}>", T::name()))
             .port(PortDescription::<InValueA<T>>::input())
             .port(PortDescription::<InValueB<T>>::input())
             .port(PortDescription::<OutValue<T>>::output())
