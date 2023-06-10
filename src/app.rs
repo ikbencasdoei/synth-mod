@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use eframe::{
     egui::{self, Context},
     epaint::Vec2,
@@ -10,6 +12,8 @@ const SCALE: f32 = 1.5;
 pub struct App {
     pub rack: Rack,
     output: Output,
+    last_instant: Instant,
+    last_sample_rate: u32,
 }
 
 impl Default for App {
@@ -17,6 +21,8 @@ impl Default for App {
         Self {
             rack: Rack::default(),
             output: Output::new(),
+            last_instant: Instant::now(),
+            last_sample_rate: 44100,
         }
     }
 }
@@ -45,6 +51,9 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        let delta = self.last_instant.elapsed();
+        self.last_instant = Instant::now();
+
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(env!("CARGO_PKG_NAME"));
@@ -55,28 +64,41 @@ impl eframe::App for App {
             });
         });
 
-        self.rack
-            .show(ctx, self.output.sample_rate().unwrap_or_default());
+        self.rack.show(
+            ctx,
+            self.output.sample_rate().unwrap_or(self.last_sample_rate),
+        );
 
-        while !self.output.is_full() {
-            let outputs = self
-                .rack
-                .process(self.output.sample_rate().unwrap_or_default());
+        if self.output.has_valid_instance() {
+            while !self.output.is_full() {
+                let outputs = self.rack.process(
+                    self.output
+                        .sample_rate()
+                        .expect("if output has an instance this should be present"),
+                );
 
-            if !outputs.is_empty() {
-                for frame in outputs {
-                    self.output.push_frame(frame)
+                if !outputs.is_empty() {
+                    for frame in outputs {
+                        self.output.push_frame(frame)
+                    }
+                } else {
+                    self.output.push_frame(Frame::ZERO)
                 }
-            } else {
-                self.output.push_frame(Frame::ZERO)
+
+                self.output
+                    .instance
+                    .as_mut()
+                    .unwrap()
+                    .commit_frames()
+                    .expect("ringbuffer should not overflow using output.is_full");
             }
 
-            self.output
-                .instance
-                .as_mut()
-                .unwrap()
-                .commit_frames()
-                .expect("ringbuffer should not overflow using output.is_full");
+            self.last_sample_rate = self.output.sample_rate().unwrap()
+        } else {
+            let samples = (self.last_sample_rate as f32 * delta.as_secs_f32()) as usize;
+            for _ in 0..samples {
+                self.rack.process(self.last_sample_rate);
+            }
         }
 
         ctx.request_repaint();

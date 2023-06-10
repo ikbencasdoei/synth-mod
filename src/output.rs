@@ -135,6 +135,12 @@ impl Output {
         }
     }
 
+    pub fn has_valid_instance(&self) -> bool {
+        self.instance
+            .as_ref()
+            .is_some_and(|instance| !instance.is_invalid())
+    }
+
     pub fn push_frame(&mut self, value: Frame) {
         if let Some(instance) = &mut self.instance {
             let damper = &mut self
