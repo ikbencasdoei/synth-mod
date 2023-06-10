@@ -16,7 +16,6 @@ rubato = "0.12.0"
 strum = { version = "0.24.1", features = ["strum_macros"] }
 strum_macros = "0.24.3"
 
-
 [dependencies.symphonia]
 version = "0.5.2"
 features = ["mp3"]
