@@ -8,6 +8,7 @@ use eframe::{
 use crate::{frame::Frame, output::Output, rack::rack::Rack};
 
 const SCALE: f32 = 1.5;
+const PROFILING: bool = true;
 
 pub struct App {
     pub rack: Rack,
@@ -29,6 +30,8 @@ impl Default for App {
 
 impl App {
     pub fn run(self) {
+        puffin::set_scopes_on(PROFILING);
+
         let options = eframe::NativeOptions {
             initial_window_size: Some(Vec2::new(1280.0, 720.0)),
             centered: true,
@@ -51,6 +54,15 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        puffin::profile_function!();
+        puffin::GlobalProfiler::lock().new_frame();
+
+        if PROFILING {
+            puffin_egui::profiler_window(ctx);
+        }
+
+        puffin::profile_scope!("app");
+
         let delta = self.last_instant.elapsed();
         self.last_instant = Instant::now();
 
@@ -68,6 +80,8 @@ impl eframe::App for App {
             ctx,
             self.output.sample_rate().unwrap_or(self.last_sample_rate),
         );
+
+        puffin::profile_scope!("process");
 
         if self.output.has_valid_instance() {
             while !self.output.is_full() {
