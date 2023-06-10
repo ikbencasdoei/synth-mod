@@ -120,10 +120,11 @@ impl Module for Filter {
         }
 
         frame = match frame {
-            Frame::Mono(frame) => Frame::Mono(self.left.unwrap().run(frame)),
-            Frame::Stereo(left, right) => {
-                Frame::Stereo(self.left.unwrap().run(left), self.right.unwrap().run(right))
-            }
+            Frame::Mono(frame) => Frame::Mono(self.left.as_mut().unwrap().run(frame)),
+            Frame::Stereo(left, right) => Frame::Stereo(
+                self.left.as_mut().unwrap().run(left),
+                self.right.as_mut().unwrap().run(right),
+            ),
         };
 
         ctx.set_output::<FilterOutput>(frame);
