@@ -51,42 +51,19 @@ impl FilterType {
 }
 
 pub struct Filter {
-    left: DirectForm1<f32>,
-    right: DirectForm1<f32>,
+    left: Option<DirectForm1<f32>>,
+    right: Option<DirectForm1<f32>>,
     filter_type: FilterType,
     cutoff: f32,
 }
 
 impl Filter {
     pub fn new() -> Self {
-        let filter_type = FilterType::LowPass;
-
-        //TODO: make this work with all sample rates
-        let sample_rate = 192000.hz();
-        let cutoff = 50.0;
-
-        let coeffs = match filter_type {
-            FilterType::LowPass => biquad::Coefficients::<f32>::from_params(
-                biquad::Type::LowPass,
-                sample_rate,
-                cutoff.hz(),
-                biquad::Q_BUTTERWORTH_F32,
-            )
-            .unwrap(),
-            FilterType::HighPass => biquad::Coefficients::<f32>::from_params(
-                biquad::Type::HighPass,
-                sample_rate,
-                cutoff.hz(),
-                biquad::Q_BUTTERWORTH_F32,
-            )
-            .unwrap(),
-        };
-
         Self {
-            left: DirectForm1::<f32>::new(coeffs),
-            right: DirectForm1::<f32>::new(coeffs),
-            filter_type,
-            cutoff,
+            left: None,
+            right: None,
+            filter_type: FilterType::LowPass,
+            cutoff: 50.0,
         }
     }
 
@@ -110,8 +87,17 @@ impl Filter {
             return
         };
 
-        self.left.update_coefficients(coeffs);
-        self.right.update_coefficients(coeffs);
+        if let Some(left) = &mut self.left {
+            left.update_coefficients(coeffs);
+        } else {
+            self.left = Some(DirectForm1::<f32>::new(coeffs));
+        }
+
+        if let Some(right) = &mut self.right {
+            right.update_coefficients(coeffs);
+        } else {
+            self.right = Some(DirectForm1::<f32>::new(coeffs));
+        }
     }
 }
 
@@ -129,9 +115,15 @@ impl Module for Filter {
     fn process(&mut self, ctx: &mut ProcessContext) {
         let mut frame = ctx.get_input::<FilterInput>();
 
+        if self.left.is_none() {
+            self.update_coeffs(ctx.sample_rate())
+        }
+
         frame = match frame {
-            Frame::Mono(frame) => Frame::Mono(self.left.run(frame)),
-            Frame::Stereo(left, right) => Frame::Stereo(self.left.run(left), self.right.run(right)),
+            Frame::Mono(frame) => Frame::Mono(self.left.unwrap().run(frame)),
+            Frame::Stereo(left, right) => {
+                Frame::Stereo(self.left.unwrap().run(left), self.right.unwrap().run(right))
+            }
         };
 
         ctx.set_output::<FilterOutput>(frame);

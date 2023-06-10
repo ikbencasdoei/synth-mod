@@ -32,7 +32,6 @@ impl Port for FileOutput {
     }
 }
 
-
 enum Message {
     Decoded(Option<Vec<Frame>>),
     PickedFile(PathBuf),
@@ -64,7 +63,7 @@ impl Default for File {
 }
 
 impl File {
-    pub fn decode(path: impl AsRef<Path>) -> Option<Vec<Frame>> {
+    pub fn decode(path: impl AsRef<Path>, target_sample_rate: usize) -> Option<Vec<Frame>> {
         let file = std::fs::File::open(&path).ok()?;
 
         let source = MediaSourceStream::new(Box::new(file), MediaSourceStreamOptions::default());
@@ -158,7 +157,7 @@ impl File {
 
         let mut resampler = FftFixedIn::<f32>::new(
             spec.unwrap().rate as usize,
-            192000,
+            target_sample_rate,
             seperated.first()?.len(),
             1024,
             channels,
@@ -183,13 +182,15 @@ impl File {
         Some(buffer)
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, sample_rate: usize) {
         self.loading = true;
         std::thread::spawn({
             let sender = self.sender.clone();
             let path = self.path.clone();
             move || {
-                sender.send(Message::Decoded(Self::decode(&path))).ok();
+                sender
+                    .send(Message::Decoded(Self::decode(&path, sample_rate)))
+                    .ok();
             }
         });
     }
@@ -234,7 +235,7 @@ impl Module for File {
                 }
                 Message::PickedFile(path) => {
                     self.path = path.to_string_lossy().to_string();
-                    self.update();
+                    self.update(ctx.sample_rate() as usize);
                 }
             }
         }
@@ -263,7 +264,7 @@ impl Module for File {
             });
 
             if ui.text_edit_singleline(&mut self.path).changed() {
-                self.update();
+                self.update(ctx.sample_rate as usize);
             }
 
             if ui.button("pick").clicked() {
