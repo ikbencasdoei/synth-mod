@@ -85,11 +85,11 @@ impl Module for Scope {
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(Scope::default)
             .name("📈 Scope")
-            .input_description(
-                PortDescription::new_input::<ScopeInput>()
-                    .add_conversion(|frame: Frame| frame.as_f32_mono()),
+            .port(
+                PortDescription::<ScopeInput>::input()
+                    .conversion(|frame: Frame| frame.as_f32_mono()),
             )
-            .input::<ScopeInput>()
+            .port(PortDescription::<ScopeInput>::input())
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

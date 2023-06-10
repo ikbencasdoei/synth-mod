@@ -18,7 +18,7 @@ use symphonia::core::{
 
 use crate::{
     frame::Frame,
-    module::{Module, ModuleDescription, Port},
+    module::{Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -220,7 +220,7 @@ impl Module for File {
     {
         ModuleDescription::new(File::default)
             .name("📁 File")
-            .output::<FileOutput>()
+            .port(PortDescription::<FileOutput>::output())
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

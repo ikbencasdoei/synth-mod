@@ -5,7 +5,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    module::{Input, Module, ModuleDescription, Port},
+    module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -83,8 +83,8 @@ impl Module for Oscillator {
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(Oscillator::default)
             .name("📉 Oscillator")
-            .input::<FrequencyInput>()
-            .output::<FrameOutput>()
+            .port(PortDescription::<FrequencyInput>::input())
+            .port(PortDescription::<FrameOutput>::output())
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {

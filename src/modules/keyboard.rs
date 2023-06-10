@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    module::{Module, ModuleDescription, Port},
+    module::{Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -145,8 +145,8 @@ impl Module for Keyboard {
     {
         ModuleDescription::new(Keyboard::default)
             .name("🎹 Keyboard")
-            .output::<KeyboardFreqOutput>()
-            .output::<KeyboardPressedOutput>()
+            .port(PortDescription::<KeyboardFreqOutput>::output())
+            .port(PortDescription::<KeyboardPressedOutput>::output())
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

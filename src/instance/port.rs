@@ -7,18 +7,18 @@ use eframe::{
 use super::instance::InstanceHandle;
 use crate::{
     io::PortHandle,
-    module::{PortDescription, PortType},
+    module::{PortDescriptionDyn, PortType},
     rack::rack::ShowContext,
 };
 
 pub struct PortInstance {
-    pub description: PortDescription,
+    pub description: PortDescriptionDyn,
     dragging: bool,
     pub handle: PortHandle,
 }
 
 impl PortInstance {
-    pub fn from_description(description: &PortDescription, instance: InstanceHandle) -> Self {
+    pub fn from_description(description: &PortDescriptionDyn, instance: InstanceHandle) -> Self {
         Self {
             description: description.clone(),
             dragging: false,
@@ -160,7 +160,7 @@ impl PortInstance {
 }
 
 pub struct PortResponse {
-    pub description: PortDescription,
+    pub description: PortDescriptionDyn,
     pub position: Pos2,
     pub dragging: bool,
     pub released: bool,

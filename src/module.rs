@@ -43,8 +43,8 @@ impl Clone for Box<dyn ModuleClosure> {
 pub struct ModuleDescriptionDyn {
     pub name: String,
     pub instatiate: Box<dyn ModuleClosure>,
-    pub inputs: Vec<PortDescription>,
-    pub outputs: Vec<PortDescription>,
+    pub inputs: Vec<PortDescriptionDyn>,
+    pub outputs: Vec<PortDescriptionDyn>,
 }
 
 impl ModuleDescriptionDyn {
@@ -68,8 +68,8 @@ impl ModuleDescriptionDyn {
 pub struct ModuleDescription<M> {
     name: String,
     instatiate: Box<dyn ModuleClosure>,
-    inputs: Vec<PortDescription>,
-    outputs: Vec<PortDescription>,
+    inputs: Vec<PortDescriptionDyn>,
+    outputs: Vec<PortDescriptionDyn>,
     phantom: PhantomData<M>,
 }
 
@@ -89,18 +89,11 @@ impl<M: Module> ModuleDescription<M> {
         self
     }
 
-    pub fn input<I: Input>(mut self) -> Self {
-        self.inputs.push(PortDescription::new_input::<I>());
-        self
-    }
-
-    pub fn output<I: Port>(mut self) -> Self {
-        self.outputs.push(PortDescription::new_output::<I>());
-        self
-    }
-
-    pub fn input_description(mut self, description: PortDescription) -> Self {
-        self.inputs.push(description);
+    pub fn port<P: Port>(mut self, port: PortDescription<P>) -> Self {
+        match port.port_type {
+            PortType::Input => self.inputs.push(port.into_dyn()),
+            PortType::Output => self.outputs.push(port.into_dyn()),
+        }
         self
     }
 
@@ -186,7 +179,7 @@ impl Clone for Box<dyn ConversionClosure> {
 }
 
 #[derive(Clone)]
-pub struct PortDescription {
+pub struct PortDescriptionDyn {
     pub name: &'static str,
     pub type_name: &'static str,
     pub port_type: PortType,
@@ -196,54 +189,74 @@ pub struct PortDescription {
     pub conversions: Vec<Conversion>,
 }
 
-impl PortDescription {
-    pub fn new_input<I: Input>() -> Self {
+impl PortDescriptionDyn {
+    pub fn from_typed<P: Port>(description: PortDescription<P>) -> Self {
         Self {
-            name: I::name(),
-            type_name: I::type_name(),
+            name: P::name(),
+            type_name: P::type_name(),
+            port_type: description.port_type,
+            id: P::id(),
+            closure_edit: description.closure_edit,
+            closure_value: description.closure_value,
+            conversions: description.conversions,
+        }
+    }
+}
+
+pub struct PortDescription<P> {
+    port_type: PortType,
+    closure_edit: Option<Box<dyn InputClosureEdit>>,
+    closure_value: Option<Box<dyn InputClosureValue>>,
+    conversions: Vec<Conversion>,
+    phantom: PhantomData<P>,
+}
+
+impl<P: Port> PortDescription<P> {
+    pub fn input() -> Self
+    where
+        P: Input,
+    {
+        Self {
             port_type: PortType::Input,
-            id: I::id(),
             closure_edit: Some(Box::new(
                 |handle: PortHandle, ctx: &mut ShowContext, ui: &mut Ui| {
-                    let mut value = ctx.get_input::<I>(handle);
+                    let mut value = ctx.get_input::<P>(handle);
 
-                    I::show(&mut value, ui);
+                    P::show(&mut value, ui);
 
-                    ctx.set_input::<I>(handle, value)
+                    ctx.set_input::<P>(handle, value)
                 },
             )),
             closure_value: Some(Box::new(|handle: PortHandle, ctx: &ShowContext| {
-                let value = ctx.get_input::<I>(handle);
+                let value = ctx.get_input::<P>(handle);
                 value.to_string()
             })),
             conversions: Vec::new(),
+            phantom: PhantomData,
         }
     }
 
-    pub fn new_output<I: Port>() -> Self {
+    pub fn output() -> Self {
         Self {
-            name: I::name(),
-            type_name: I::type_name(),
             port_type: PortType::Output,
-            id: I::id(),
             closure_edit: None,
             closure_value: None,
             conversions: Vec::new(),
+            phantom: PhantomData,
         }
     }
 
-    pub fn add_conversion<I: PortValueBoxed + Clone, O: PortValueBoxed>(
+    pub fn conversion<I: PortValueBoxed + Clone>(
         mut self,
-        closure: impl Fn(I) -> O + Clone + 'static,
+        closure: impl Fn(I) -> P::Type + Clone + 'static,
     ) -> Self {
-        if TypeId::of::<O>() != self.id.value_type {
-            panic!("incorrect conversion output")
-        }
-        let conversion = Conversion::new_input(self.id, closure);
-
+        let conversion = Conversion::new_input(P::id(), closure);
         self.conversions.push(conversion.unwrap());
-
         self
+    }
+
+    pub fn into_dyn(self) -> PortDescriptionDyn {
+        PortDescriptionDyn::from_typed(self)
     }
 }
 

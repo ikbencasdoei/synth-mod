@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 
 use crate::{
     frame::Frame,
-    module::{Input, Module, ModuleDescription, Port},
+    module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -108,8 +108,8 @@ impl Module for Filter {
     {
         ModuleDescription::new(|| Filter::new())
             .name("🕳 Filter")
-            .input::<FilterInput>()
-            .output::<FilterOutput>()
+            .port(PortDescription::<FilterInput>::input())
+            .port(PortDescription::<FilterOutput>::output())
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {

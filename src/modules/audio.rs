@@ -46,9 +46,9 @@ impl Module for Audio {
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(Audio::default)
             .name("🔊 Audio Output")
-            .input_description(
-                PortDescription::new_input::<AudioInput>()
-                    .add_conversion(|sample: f32| Frame::Mono(sample)),
+            .port(
+                PortDescription::<AudioInput>::input()
+                    .conversion(|sample: f32| Frame::Mono(sample)),
             )
     }
 

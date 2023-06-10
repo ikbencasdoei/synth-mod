@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::{
-    module::{Input, Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Input, Module, ModuleDescription, Port, PortDescription, PortValueBoxed},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -117,9 +117,9 @@ where
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::new(|| Operation::new())
             .name(&format!("➕✖Operation<{}>", std::any::type_name::<T>()))
-            .input::<InValueA<T>>()
-            .input::<InValueB<T>>()
-            .output::<OutValue<T>>()
+            .port(PortDescription::<InValueA<T>>::input())
+            .port(PortDescription::<InValueB<T>>::input())
+            .port(PortDescription::<OutValue<T>>::output())
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {

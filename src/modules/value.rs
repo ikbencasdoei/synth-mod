@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use eframe::egui::{self, Ui};
 
 use crate::{
-    module::{Module, ModuleDescription, Port, PortValueBoxed},
+    module::{Module, ModuleDescription, Port, PortDescription, PortValueBoxed},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -52,7 +52,7 @@ impl<T: Edit + PortValueBoxed + Clone + Default> Module for Value<T> {
     {
         ModuleDescription::new(|| Value::<T>::new())
             .name(&format!("⎙ Value<{}>", std::any::type_name::<T>()))
-            .output::<ValueOutput<T>>()
+            .port(PortDescription::<ValueOutput<T>>::output())
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
