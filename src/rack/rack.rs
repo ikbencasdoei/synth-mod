@@ -264,14 +264,17 @@ impl Rack {
     }
 
     pub fn process(&mut self, sample_rate: u32) -> Vec<Frame> {
-        for instance in self.instances.values_mut() {
-            let mut ctx = ProcessContext {
-                sample_rate,
-                handle: instance.handle,
-                io: &mut self.io,
-            };
+        for order in self.io.processing_order.clone() {
+            for handle in order {
+                let instance = self.instances.get_mut(&handle).unwrap();
+                let mut ctx = ProcessContext {
+                    sample_rate,
+                    handle: instance.handle,
+                    io: &mut self.io,
+                };
 
-            instance.module.process(&mut ctx)
+                instance.module.process(&mut ctx)
+            }
         }
 
         let outputs = self

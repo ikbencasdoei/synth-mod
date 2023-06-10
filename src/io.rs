@@ -3,6 +3,8 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use topological_sort::TopologicalSort;
+
 use crate::{
     instance::instance::InstanceHandle,
     module::{ConversionClosure, Input, Port, PortId, PortValueBoxed},
@@ -44,6 +46,7 @@ pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
     pub connections: HashMap<PortHandle, HashSet<PortHandle>>,
     conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
+    pub processing_order: Vec<Vec<InstanceHandle>>,
 }
 
 impl Io {
@@ -135,6 +138,8 @@ impl Io {
 
         connections.insert(to);
 
+        self.processing_order = self.get_instances_processing_order();
+
         can_connect
     }
 
@@ -165,6 +170,7 @@ impl Io {
         if let Some(connections) = self.connections.get_mut(&from) {
             connections.remove(&to);
             self.inputs.remove(&to);
+            self.processing_order = self.get_instances_processing_order();
         }
     }
 
@@ -199,6 +205,41 @@ impl Io {
 
     pub fn add_conversion(&mut self, conversion: Conversion) {
         self.conversions.insert(conversion.id, conversion.closure);
+    }
+
+    pub fn get_instances_dependencies(&self) -> HashMap<InstanceHandle, HashSet<InstanceHandle>> {
+        let mut map = HashMap::new();
+
+        for (&from, connections) in self.connections.iter() {
+            for &to in connections {
+                map.entry(to.instance)
+                    .or_insert(HashSet::new())
+                    .insert(from.instance);
+            }
+        }
+
+        map
+    }
+
+    pub fn get_instances_processing_order(&self) -> Vec<Vec<InstanceHandle>> {
+        let mut topo = TopologicalSort::<InstanceHandle>::new();
+
+        for (instance, deps) in self.get_instances_dependencies() {
+            for dep in deps {
+                topo.add_dependency(dep, instance);
+            }
+        }
+
+        let mut list = Vec::new();
+        while !topo.is_empty() {
+            let elements = topo.pop_all();
+            if elements.is_empty() {
+                panic!("cyclic dependency")
+            }
+            list.push(elements)
+        }
+
+        list
     }
 }
 
