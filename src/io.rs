@@ -223,10 +223,14 @@ impl Io {
 
     pub fn get_instances_processing_order(&self) -> Vec<Vec<InstanceHandle>> {
         let mut topo = TopologicalSort::<InstanceHandle>::new();
-
+        let mut added = HashSet::new();
         for (instance, deps) in self.get_instances_dependencies() {
             for dep in deps {
-                topo.add_dependency(dep, instance);
+                if !added.contains(&instance) || !added.contains(&dep) {
+                    topo.add_dependency(dep, instance);
+                    added.insert(dep);
+                    added.insert(instance);
+                }
             }
         }
 

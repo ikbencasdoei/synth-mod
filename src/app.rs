@@ -8,7 +8,7 @@ use eframe::{
 use crate::{frame::Frame, output::Output, rack::rack::Rack};
 
 const SCALE: f32 = 1.5;
-const PROFILING: bool = true;
+const PROFILING: bool = false;
 
 pub struct App {
     pub rack: Rack,

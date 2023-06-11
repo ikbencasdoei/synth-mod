@@ -94,7 +94,7 @@ impl Panel {
 pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<Panel>,
-    modules: Vec<ModuleDescriptionDyn>,
+    pub modules: Vec<ModuleDescriptionDyn>,
     types: Vec<TypeDefinitionDyn>,
     pub io: Io,
 }

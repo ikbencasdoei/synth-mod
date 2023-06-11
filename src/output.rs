@@ -75,6 +75,10 @@ impl StreamInstance {
         self.producer.is_full()
     }
 
+    pub fn free_len(&self) -> usize {
+        self.producer.free_len()
+    }
+
     pub fn push_frame(&mut self, value: Frame, volume: f32) {
         self.current_frames.push(value * volume)
     }
@@ -132,6 +136,14 @@ impl Output {
             instance.is_full()
         } else {
             true
+        }
+    }
+
+    pub fn free_len(&self) -> usize {
+        if let Some(instance) = &self.instance {
+            instance.free_len()
+        } else {
+            0
         }
     }
 
