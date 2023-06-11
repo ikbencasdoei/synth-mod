@@ -77,6 +77,7 @@ impl App {
         self.last_instant = Instant::now();
 
         if self.output.has_valid_instance() {
+            let mut last = None;
             while !self.output.is_full() {
                 let outputs = self.rack.process(
                     self.output
@@ -98,6 +99,15 @@ impl App {
                     .unwrap()
                     .commit_frames()
                     .expect("ringbuffer should not overflow using output.is_full");
+
+                let free_len = self.output.free_len();
+                if let Some(last) = last {
+                    if free_len > last {
+                        break;
+                    }
+                }
+
+                last = Some(free_len)
             }
 
             self.last_sample_rate = self.output.sample_rate().unwrap()
