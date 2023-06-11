@@ -159,6 +159,10 @@ impl Rack {
         handle
     }
 
+    pub fn add_panel(&mut self) {
+        self.panels.push(Panel::new())
+    }
+
     #[allow(unused)]
     pub fn add_module_typed<T: Module>(&mut self) -> TypedInstanceHandle<T> {
         if self.panels.get(0).is_none() {
@@ -249,7 +253,7 @@ impl Rack {
 
                         ui.vertical(|ui| {
                             if ui.add(Button::new("➕ Panel").wrap(false)).clicked() {
-                                self.panels.push(Panel::new())
+                                self.add_panel()
                             }
                         });
                     });
