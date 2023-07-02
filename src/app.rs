@@ -18,6 +18,8 @@ pub struct App {
 
 impl Default for App {
     fn default() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        console_error_panic_hook::set_once();
         Self {
             rack: Rack::default(),
             output: Output::new(),
