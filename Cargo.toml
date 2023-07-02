@@ -30,6 +30,10 @@ wasm-bindgen = "0.2.87"
 wasm-bindgen-futures = "0.4.37"
 console_error_panic_hook = "0.1.7"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+version = "0.3.64"
+features = ["Document"]
+
 [target.'cfg(target_arch = "wasm32")'.dependencies.cpal]
 features = ["wasm-bindgen"]
 version = "0.15.2"

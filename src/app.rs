@@ -33,6 +33,12 @@ impl App {
     pub fn run(self) {
         puffin::set_scopes_on(PROFILING);
 
+        web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .set_title(env!("CARGO_PKG_NAME"));
+
         let options = eframe::WebOptions::default();
 
         wasm_bindgen_futures::spawn_local(async {
