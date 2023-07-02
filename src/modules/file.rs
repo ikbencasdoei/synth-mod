@@ -1,6 +1,8 @@
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 use std::{
     io::ErrorKind,
-    path::{Path, PathBuf},
+    path::Path,
     sync::mpsc::{Receiver, Sender},
 };
 
@@ -35,6 +37,7 @@ impl Port for FileOutput {
 
 enum Message {
     Decoded(Option<Vec<Frame>>),
+    #[cfg(not(target_arch = "wasm32"))]
     PickedFile(PathBuf),
 }
 
@@ -240,6 +243,7 @@ impl Module for File {
                     }
                     self.loading = false
                 }
+                #[cfg(not(target_arch = "wasm32"))]
                 Message::PickedFile(path) => {
                     self.path = path.to_string_lossy().to_string();
                     self.update(ctx.sample_rate() as usize);

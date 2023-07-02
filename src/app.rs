@@ -1,7 +1,6 @@
-use eframe::{
-    egui::{self, Context},
-    epaint::Vec2,
-};
+use eframe::egui::{self, Context};
+#[cfg(not(target_arch = "wasm32"))]
+use eframe::epaint::Vec2;
 use wasm_timer::Instant;
 
 use crate::{frame::Frame, output::Output, rack::rack::Rack};
