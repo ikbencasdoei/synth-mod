@@ -18,6 +18,20 @@ rubato = "0.12.0"
 strum = { version = "0.24.1", features = ["strum_macros"] }
 strum_macros = "0.24.3"
 topological-sort = "0.2.2"
+wasm-timer = "0.2.5"
+
+#getrandom is a dependency of rand
+[target.'cfg(target_arch = "wasm32")'.dependencies.getrandom]
+version = "*"
+features = ["js"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2.87"
+wasm-bindgen-futures = "0.4.37"
+console_error_panic_hook = "0.1.7"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies.cpal]
+features = ["wasm-bindgen"]
 
 [dependencies.symphonia]
 version = "0.5.2"

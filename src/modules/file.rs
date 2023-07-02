@@ -5,6 +5,7 @@ use std::{
 };
 
 use eframe::egui::{Slider, Ui};
+#[cfg(not(target_arch = "wasm32"))]
 use rfd::FileDialog;
 use rubato::{FftFixedIn, Resampler};
 use symphonia::core::{
@@ -195,6 +196,12 @@ impl File {
         });
     }
 
+    #[cfg(target_arch = "wasm32")]
+    fn open_picker(&self) {
+        todo!()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     fn open_picker(&self) {
         let mut dialog = FileDialog::new().add_filter("audio", &["mp3"]);
 

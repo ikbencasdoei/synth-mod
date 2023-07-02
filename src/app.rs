@@ -1,9 +1,8 @@
-use std::time::Instant;
-
 use eframe::{
     egui::{self, Context},
     epaint::Vec2,
 };
+use wasm_timer::Instant;
 
 use crate::{frame::Frame, output::Output, rack::rack::Rack};
 
@@ -29,6 +28,29 @@ impl Default for App {
 }
 
 impl App {
+    #[cfg(target_arch = "wasm32")]
+    pub fn run(self) {
+        puffin::set_scopes_on(PROFILING);
+
+        let options = eframe::WebOptions::default();
+
+        wasm_bindgen_futures::spawn_local(async {
+            eframe::WebRunner::new()
+                .start(
+                    "canvas",
+                    options,
+                    Box::new(|cc| {
+                        cc.egui_ctx.set_pixels_per_point(SCALE);
+                        // cc.egui_ctx.set_debug_on_hover(true);
+                        Box::new(self)
+                    }),
+                )
+                .await
+                .unwrap();
+        });
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn run(self) {
         puffin::set_scopes_on(PROFILING);
 
