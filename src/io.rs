@@ -44,9 +44,9 @@ impl ConnectResult {
 #[derive(Default)]
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
-    pub connections: HashMap<PortHandle, HashSet<PortHandle>>,
+    connections: HashMap<PortHandle, HashSet<PortHandle>>,
     conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
-    pub processing_order: Vec<Vec<InstanceHandle>>,
+    processing_order: Vec<Vec<InstanceHandle>>,
 }
 
 impl Io {
@@ -250,6 +250,12 @@ impl Io {
         self.processing_order = self.compute_instances_processing_order().unwrap();
     }
 
+    pub fn connections(&self) -> &HashMap<PortHandle, HashSet<PortHandle>> {
+        &self.connections
+    }
+
+    pub fn processing_order(&self) -> &Vec<Vec<InstanceHandle>> {
+        &self.processing_order
     }
 }
 

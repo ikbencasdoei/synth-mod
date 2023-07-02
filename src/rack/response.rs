@@ -51,7 +51,7 @@ impl RackResponse {
     }
 
     pub fn show_connections(&self, rack: &Rack, ui: &mut Ui) {
-        for (&from, connections) in rack.io.connections.iter() {
+        for (&from, connections) in rack.io.connections().iter() {
             for &to in connections.iter() {
                 let from_response = self.get_response(from.instance).unwrap();
                 let to_response = self.get_response(to.instance).unwrap();

@@ -274,7 +274,7 @@ impl Rack {
 
         {
             puffin::profile_scope!("modules");
-            for order in self.io.processing_order.clone() {
+            for order in self.io.processing_order().clone() {
                 for handle in order {
                     let instance = self.instances.get_mut(&handle).unwrap();
                     let mut ctx = ProcessContext {
