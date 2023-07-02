@@ -138,7 +138,7 @@ impl Io {
 
         connections.insert(to);
 
-        self.processing_order = self.get_instances_processing_order();
+        self.update_instances_processing_order();
 
         can_connect
     }
@@ -170,7 +170,7 @@ impl Io {
         if let Some(connections) = self.connections.get_mut(&from) {
             connections.remove(&to);
             self.inputs.remove(&to);
-            self.processing_order = self.get_instances_processing_order();
+            self.update_instances_processing_order();
         }
     }
 
@@ -221,7 +221,7 @@ impl Io {
         map
     }
 
-    pub fn get_instances_processing_order(&self) -> Vec<Vec<InstanceHandle>> {
+    pub fn compute_instances_processing_order(&self) -> Result<Vec<Vec<InstanceHandle>>, &str> {
         let mut topo = TopologicalSort::<InstanceHandle>::new();
         let mut added = HashSet::new();
         for (instance, deps) in self.get_instances_dependencies() {
@@ -238,12 +238,18 @@ impl Io {
         while !topo.is_empty() {
             let elements = topo.pop_all();
             if elements.is_empty() {
-                panic!("cyclic dependency")
+                return Err("cyclic dependency");
             }
             list.push(elements)
         }
 
-        list
+        Ok(list)
+    }
+
+    pub fn update_instances_processing_order(&mut self) {
+        self.processing_order = self.compute_instances_processing_order().unwrap();
+    }
+
     }
 }
 
