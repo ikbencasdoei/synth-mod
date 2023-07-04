@@ -1,14 +1,12 @@
-#[cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
+#![cfg(not(target_arch = "wasm32"))]
+
 use std::{
     io::ErrorKind,
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::{Receiver, Sender},
 };
 
 use eframe::egui::{Slider, Ui};
-#[cfg(not(target_arch = "wasm32"))]
-use rfd::FileDialog;
 use rubato::{FftFixedIn, Resampler};
 use symphonia::core::{
     audio::SampleBuffer,
@@ -37,7 +35,6 @@ impl Port for FileOutput {
 
 enum Message {
     Decoded(Option<Vec<Frame>>),
-    #[cfg(not(target_arch = "wasm32"))]
     PickedFile(PathBuf),
 }
 
@@ -199,12 +196,6 @@ impl File {
         });
     }
 
-    #[cfg(target_arch = "wasm32")]
-    fn open_picker(&self) {
-        todo!()
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
     fn open_picker(&self) {
         let mut dialog = FileDialog::new().add_filter("audio", &["mp3"]);
 
@@ -243,7 +234,6 @@ impl Module for File {
                     }
                     self.loading = false
                 }
-                #[cfg(not(target_arch = "wasm32"))]
                 Message::PickedFile(path) => {
                     self.path = path.to_string_lossy().to_string();
                     self.update(ctx.sample_rate() as usize);

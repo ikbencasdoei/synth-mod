@@ -9,6 +9,8 @@ use eframe::{
 };
 
 use super::response::RackResponse;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::modules::file::File;
 use crate::{
     frame::Frame,
     instance::{
@@ -18,8 +20,8 @@ use crate::{
     io::{ConnectResult, Io, PortHandle},
     module::{Input, Module, ModuleDescriptionDyn, Port, PortValueBoxed},
     modules::{
-        audio::Audio, file::File, filter::Filter, keyboard::Keyboard, ops::Operation,
-        oscillator::Oscillator, scope::Scope, value::Value,
+        audio::Audio, filter::Filter, keyboard::Keyboard, ops::Operation, oscillator::Oscillator,
+        scope::Scope, value::Value,
     },
     types::{Type, TypeDefinitionDyn},
 };
@@ -119,6 +121,7 @@ impl Default for Rack {
         new.init_module::<Value<f32>>();
         new.init_module::<Scope>();
         new.init_module::<Keyboard>();
+        #[cfg(not(target_arch = "wasm32"))]
         new.init_module::<File>();
         new.init_module::<Filter>();
 
