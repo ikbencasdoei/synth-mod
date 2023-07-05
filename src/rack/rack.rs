@@ -282,12 +282,11 @@ impl Rack {
         });
     }
 
-    pub fn process(&mut self, sample_rate: u32) -> Vec<Frame> {
-        puffin::profile_function!("process");
-
-        {
-            puffin::profile_scope!("modules");
-            for order in self.io.processing_order().clone() {
+    pub fn process_amount(&mut self, sample_rate: u32, amount: usize) -> Vec<Vec<Frame>> {
+        let mut frames = Vec::new();
+        let order = self.io.processing_order().clone();
+        for _ in 0..amount {
+            for order in order.iter() {
                 for handle in order {
                     let instance = self.instances.get_mut(&handle).unwrap();
                     let mut ctx = ProcessContext {
@@ -299,9 +298,11 @@ impl Rack {
                     instance.module.process(&mut ctx)
                 }
             }
+
+            frames.push(self.receiver.try_iter().collect::<Vec<_>>());
         }
 
-        self.receiver.try_iter().collect::<Vec<_>>()
+        frames
     }
 }
 

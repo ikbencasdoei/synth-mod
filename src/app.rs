@@ -8,7 +8,7 @@ use wasm_timer::Instant;
 use crate::{frame::Frame, output::Output, rack::rack::Rack};
 
 const SCALE: f32 = 1.5;
-const PROFILING: bool = false;
+const PROFILING: bool = true;
 
 pub struct App {
     pub rack: Rack,
@@ -100,12 +100,16 @@ impl App {
         puffin::profile_function!();
 
         if let Some(instance) = self.output.instance_mut() {
-            for _ in 0..instance.free_len() {
-                let mut outputs = self.rack.process(instance.sample_rate());
-                let mut mixed = Frame::ZERO;
+            let amount = instance.free_len();
 
-                for frame in outputs.drain(..) {
-                    mixed += frame;
+            let outputs = self.rack.process_amount(instance.sample_rate(), amount);
+
+            for i in 0..amount {
+                let mut mixed = Frame::ZERO;
+                if let Some(frames) = outputs.get(i) {
+                    for &frame in frames {
+                        mixed += frame;
+                    }
                 }
 
                 instance
@@ -115,9 +119,8 @@ impl App {
         } else {
             let samples =
                 (self.output.sample_rate_or_default() as f32 * delta.as_secs_f32()) as usize;
-            for _ in 0..samples {
-                self.rack.process(self.output.sample_rate_or_default());
-            }
+            self.rack
+                .process_amount(self.output.sample_rate_or_default(), samples);
         }
     }
 }
