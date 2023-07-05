@@ -100,7 +100,6 @@ impl App {
         puffin::profile_function!();
 
         if let Some(instance) = self.output.instance_mut() {
-            instance.free_len();
             for _ in 0..instance.free_len() {
                 let mut outputs = self.rack.process(instance.sample_rate());
                 let mut mixed = Frame::ZERO;
