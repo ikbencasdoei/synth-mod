@@ -12,7 +12,6 @@ pub struct App {
     pub rack: Rack,
     output: Output,
     last_instant: Instant,
-    last_sample_rate: u32,
 }
 
 impl Default for App {
@@ -23,7 +22,6 @@ impl Default for App {
             rack: Rack::default(),
             output: Output::new(),
             last_instant: Instant::now(),
-            last_sample_rate: 44100,
         }
     }
 }
@@ -93,10 +91,7 @@ impl App {
             });
         });
 
-        self.rack.show(
-            ctx,
-            self.output.sample_rate().unwrap_or(self.last_sample_rate),
-        );
+        self.rack.show(ctx, self.output.sample_rate_or_default());
     }
 
     fn process(&mut self) {
@@ -105,45 +100,25 @@ impl App {
         let delta = self.last_instant.elapsed();
         self.last_instant = Instant::now();
 
-        if self.output.has_valid_instance() {
-            let mut last = None;
-            while !self.output.is_full() {
-                let outputs = self.rack.process(
-                    self.output
-                        .sample_rate()
-                        .expect("if output has an instance this should be present"),
-                );
+        if let Some(instance) = self.output.instance_mut() {
+            instance.free_len();
+            for _ in 0..instance.free_len() {
+                let mut outputs = self.rack.process(instance.sample_rate());
+                let mut mixed = Frame::ZERO;
 
-                if !outputs.is_empty() {
-                    for frame in outputs {
-                        self.output.push_frame(frame)
-                    }
-                } else {
-                    self.output.push_frame(Frame::ZERO)
+                for frame in outputs.drain(..) {
+                    mixed += frame;
                 }
 
-                self.output
-                    .instance
-                    .as_mut()
-                    .unwrap()
-                    .commit_frames()
-                    .expect("ringbuffer should not overflow using output.is_full");
-
-                let free_len = self.output.free_len();
-                if let Some(last) = last {
-                    if free_len > last {
-                        break;
-                    }
-                }
-
-                last = Some(free_len)
+                instance
+                    .push_frame(mixed)
+                    .expect("producer should not be full");
             }
-
-            self.last_sample_rate = self.output.sample_rate().unwrap()
         } else {
-            let samples = (self.last_sample_rate as f32 * delta.as_secs_f32()) as usize;
+            let samples =
+                (self.output.sample_rate_or_default() as f32 * delta.as_secs_f32()) as usize;
             for _ in 0..samples {
-                self.rack.process(self.last_sample_rate);
+                self.rack.process(self.output.sample_rate_or_default());
             }
         }
     }

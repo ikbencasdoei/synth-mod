@@ -19,7 +19,9 @@ pub struct StreamInstance {
     pub config: StreamConfig,
     producer: RingProducer,
     is_err: Arc<AtomicBool>,
-    current_frames: Vec<Frame>,
+    damper: LinearDamper<f32>,
+    volume: f32,
+    muted: bool,
 }
 
 impl StreamInstance {
@@ -60,45 +62,68 @@ impl StreamInstance {
 
         Some(Self {
             _stream: stream,
+            damper: LinearDamper::cutoff(config.sample_rate.0),
             config,
             producer,
             is_err,
-            current_frames: Vec::new(),
+            volume: 0.5,
+            muted: false,
         })
     }
 
-    pub fn is_invalid(&self) -> bool {
-        self.is_err.load(std::sync::atomic::Ordering::Relaxed)
-    }
-
-    pub fn is_full(&self) -> bool {
-        self.producer.is_full()
+    pub fn is_valid(&self) -> bool {
+        !self.is_err.load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn free_len(&self) -> usize {
         self.producer.free_len()
     }
 
-    pub fn push_frame(&mut self, value: Frame, volume: f32) {
-        self.current_frames.push(value * volume)
+    pub fn sample_rate(&self) -> u32 {
+        self.config.sample_rate.0
     }
 
-    pub fn commit_frames(&mut self) -> Result<(), ()> {
-        let mut new = Frame::ZERO;
+    pub fn channels(&self) -> u16 {
+        self.config.channels
+    }
 
-        for frame in self.current_frames.drain(0..self.current_frames.len()) {
-            new += frame;
+    pub fn push_frame(&mut self, value: Frame) -> Result<(), Frame> {
+        let ampl = if self.muted {
+            self.damper.frame(0.0)
+        } else {
+            self.damper.frame(self.volume)
+        };
+
+        self.producer.push(value * ampl)
+    }
+
+    fn show(&mut self, ui: &mut Ui) {
+        let icon = if self.muted { "🔇" } else { "🔊" };
+        if ui
+            .add(egui::Label::new(icon).sense(egui::Sense::click()))
+            .clicked()
+        {
+            self.muted = !self.muted;
         }
 
-        self.producer.push(new).map_err(|_| ())
+        ui.add(
+            egui::DragValue::new(&mut self.volume)
+                .speed(0.01)
+                .clamp_range(0.0..=1.0),
+        )
+        .on_hover_text_at_pointer("volume");
+        ui.separator();
+        ui.label(RichText::new(format!("{}", self.sample_rate())).monospace())
+            .on_hover_text_at_pointer("sample rate");
+        ui.separator();
+
+        ui.label(RichText::new(format!("{}", self.channels())).monospace())
+            .on_hover_text_at_pointer("channels");
     }
 }
 
 pub struct Output {
     pub instance: Option<StreamInstance>,
-    volume: f32,
-    muted: bool,
-    damper: Option<LinearDamper<f32>>,
 }
 
 impl Output {
@@ -119,111 +144,63 @@ impl Output {
     }
 
     pub fn new() -> Self {
-        let mut new = Self {
-            instance: None,
-            damper: None,
-            volume: 0.5,
-            muted: false,
-        };
+        let mut new = Self { instance: None };
 
         new.init_instance();
 
         new
     }
 
-    pub fn is_full(&self) -> bool {
-        if let Some(instance) = &self.instance {
-            instance.is_full()
-        } else {
-            true
-        }
-    }
+    fn init_instance(&mut self) -> Option<&mut StreamInstance> {
+        let device = Self::fetch_device()?;
+        let config = Self::fetch_stream_config(&device)?;
 
-    pub fn free_len(&self) -> usize {
-        if let Some(instance) = &self.instance {
-            instance.free_len()
-        } else {
-            0
-        }
-    }
-
-    pub fn has_valid_instance(&self) -> bool {
-        self.instance
-            .as_ref()
-            .is_some_and(|instance| !instance.is_invalid())
-    }
-
-    pub fn push_frame(&mut self, value: Frame) {
-        if let Some(instance) = &mut self.instance {
-            let damper = &mut self
-                .damper
-                .as_mut()
-                .expect("if there is an instance there should be a damper");
-            let ampl = if self.muted {
-                damper.frame(0.0)
-            } else {
-                damper.frame(self.volume)
-            };
-
-            instance.push_frame(value, ampl)
-        }
-    }
-
-    fn init_instance(&mut self) {
-        let Some(device) = Self::fetch_device() else {
-            return
-        };
-        let Some(config) = Self::fetch_stream_config(&device) else {
-            return
-        };
         self.instance = StreamInstance::new(device, config);
 
-        if let Some(sample_rate) = self.sample_rate() {
-            self.damper = Some(LinearDamper::cutoff(sample_rate));
-        }
+        self.instance.as_mut()
     }
 
-    pub fn sample_rate(&self) -> Option<u32> {
-        let instance = self.instance.as_ref()?;
-        Some(instance.config.sample_rate.0)
-    }
-
-    pub fn show(&mut self, ui: &mut Ui) {
+    pub fn check_instance(&mut self) {
         if self
             .instance
             .as_ref()
-            .is_some_and(|instance| instance.is_invalid())
+            .is_some_and(|instance| !instance.is_valid())
         {
-            self.instance = None;
+            self.instance = None
+        }
+    }
+
+    pub fn instance_mut(&mut self) -> Option<&mut StreamInstance> {
+        self.check_instance();
+        self.instance.as_mut()
+    }
+
+    pub fn instance_mut_or_init(&mut self) -> Option<&mut StreamInstance> {
+        if !self.instance_mut().is_some() {
+            self.init_instance();
         }
 
-        if let Some(instance) = &mut self.instance {
-            let icon = if self.muted { "🔇" } else { "🔊" };
-            if ui
-                .add(egui::Label::new(icon).sense(egui::Sense::click()))
-                .clicked()
-            {
-                self.muted = !self.muted;
-            }
+        self.instance_mut()
+    }
 
-            ui.add(
-                egui::DragValue::new(&mut self.volume)
-                    .speed(0.01)
-                    .clamp_range(0.0..=1.0),
-            )
-            .on_hover_text_at_pointer("volume");
-            ui.separator();
-            ui.label(RichText::new(format!("{}", instance.config.sample_rate.0)).monospace())
-                .on_hover_text_at_pointer("sample rate");
-            ui.separator();
+    pub fn sample_rate_or_default(&self) -> u32 {
+        self.instance
+            .as_ref()
+            .map(|instance| instance.sample_rate())
+            .unwrap_or(44100)
+    }
 
-            ui.label(RichText::new(format!("{}", instance.config.channels)).monospace())
-                .on_hover_text_at_pointer("channels");
+    pub fn show(&mut self, ui: &mut Ui) {
+        if let Some(instance) = &mut self.instance_mut_or_init() {
+            instance.show(ui)
         } else {
-            ui.label("⚠ could not initialize audio output!");
+            ui.label(" ⚠ could not initialize audio output!");
             if ui.button("retry").clicked() {
                 self.init_instance();
             }
+            ui.separator();
+            ui.label(RichText::new(format!("({})", self.sample_rate_or_default())).monospace())
+                .on_hover_text_at_pointer("fallback sample rate");
         }
     }
 }
