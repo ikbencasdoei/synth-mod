@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 use eframe::egui::{self, Ui};
 
 use crate::{
@@ -24,21 +26,15 @@ impl Input for AudioInput {
 
 pub struct Audio {
     pub volume: f32,
-    current: Option<Frame>,
+    pub sender: Option<Sender<Frame>>,
 }
 
 impl Default for Audio {
     fn default() -> Self {
         Self {
             volume: 1.0,
-            current: Default::default(),
+            sender: None,
         }
-    }
-}
-
-impl Audio {
-    pub fn current_frame(&self) -> Option<Frame> {
-        self.current
     }
 }
 
@@ -64,6 +60,10 @@ impl Module for Audio {
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
-        self.current = Some(ctx.get_input::<AudioInput>() * self.volume)
+        if let Some(sender) = self.sender.as_ref() {
+            sender
+                .send(ctx.get_input::<AudioInput>() * self.volume)
+                .unwrap();
+        }
     }
 }

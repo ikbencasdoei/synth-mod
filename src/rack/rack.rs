@@ -1,6 +1,7 @@
 use std::{
     any::Any,
     collections::{HashMap, HashSet},
+    sync::mpsc::{Receiver, Sender},
 };
 
 use eframe::{
@@ -99,16 +100,22 @@ pub struct Rack {
     pub modules: Vec<ModuleDescriptionDyn>,
     types: Vec<TypeDefinitionDyn>,
     pub io: Io,
+    sender: Sender<Frame>,
+    receiver: Receiver<Frame>,
 }
 
 impl Default for Rack {
     fn default() -> Self {
+        let (sender, receiver) = std::sync::mpsc::channel();
+
         let mut new = Self {
             instances: Default::default(),
             panels: Vec::new(),
             modules: Vec::new(),
             types: Vec::new(),
             io: Io::default(),
+            sender,
+            receiver,
         };
 
         new.init_type::<f32>();
@@ -155,7 +162,12 @@ impl Rack {
         description: &ModuleDescriptionDyn,
         panel: usize,
     ) -> InstanceHandle {
-        let instance = Instance::from_description(description);
+        let mut instance = Instance::from_description(description);
+
+        if let Some(audio) = instance.get_module_mut::<Audio>() {
+            audio.sender = Some(self.sender.clone());
+        }
+
         let handle = instance.handle;
         self.instances.insert(handle, instance);
         self.panels.get_mut(panel).unwrap().add_instance(handle);
@@ -291,21 +303,7 @@ impl Rack {
             }
         }
 
-        let outputs = {
-            puffin::profile_scope!("&audio");
-            self.instances
-                .values()
-                .flat_map(|instance| (&*instance.module as &dyn Any).downcast_ref::<Audio>())
-                .collect::<Vec<_>>()
-        };
-
-        {
-            puffin::profile_scope!("current_frame");
-            outputs
-                .iter()
-                .flat_map(|output| output.current_frame())
-                .collect::<Vec<_>>()
-        }
+        self.receiver.try_iter().collect::<Vec<_>>()
     }
 }
 
