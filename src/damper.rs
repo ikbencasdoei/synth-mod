@@ -18,6 +18,10 @@ impl LinearDamper<f32> {
         Self::new(1.0 / (sample_rate as f32 / 20.0), 0.0)
     }
 
+    pub fn cutoff_samples(&self) -> u32 {
+        (1.0 / self.max_dif) as u32
+    }
+
     pub fn frame(&mut self, input: f32) -> f32 {
         let dif = (input - self.current).clamp(-self.max_dif, self.max_dif);
         self.current += dif;

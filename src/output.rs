@@ -125,7 +125,7 @@ impl StreamInstance {
         ui.label(RichText::new(format!("{}", self.channels())).monospace())
             .on_hover_text_at_pointer("channels");
 
-        if self.producer.free_len() as f32 > self.producer.len() as f32 * 0.8 {
+        if self.producer.free_len() > self.damper.cutoff_samples() as usize {
             self.protection = true;
             ui.separator();
             ui.label(RichText::new("⚠ cant keep up!").color(Color32::GOLD));
