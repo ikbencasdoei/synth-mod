@@ -7,6 +7,7 @@ use std::{
 };
 
 use eframe::egui::{Slider, Ui};
+use rfd::FileDialog;
 use rubato::{FftFixedIn, Resampler};
 use symphonia::core::{
     audio::SampleBuffer,
