@@ -226,22 +226,6 @@ impl Module for File {
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
-        let messages = self.receiver.try_iter().collect::<Vec<_>>();
-        for message in messages {
-            match message {
-                Message::Decoded(buffer) => {
-                    if let Some(buffer) = buffer {
-                        self.buffer = buffer;
-                    }
-                    self.loading = false
-                }
-                Message::PickedFile(path) => {
-                    self.path = path.to_string_lossy().to_string();
-                    self.update(ctx.sample_rate() as usize);
-                }
-            }
-        }
-
         let frame = if self.playing {
             if self.seek < self.buffer.len() {
                 self.seek += 1;
@@ -259,6 +243,22 @@ impl Module for File {
     }
 
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {
+        let messages = self.receiver.try_iter().collect::<Vec<_>>();
+        for message in messages {
+            match message {
+                Message::Decoded(buffer) => {
+                    if let Some(buffer) = buffer {
+                        self.buffer = buffer;
+                    }
+                    self.loading = false
+                }
+                Message::PickedFile(path) => {
+                    self.path = path.to_string_lossy().to_string();
+                    self.update(ctx.sample_rate as usize);
+                }
+            }
+        }
+
         ui.horizontal(|ui| {
             ui.add_enabled_ui(!self.buffer.is_empty(), |ui| {
                 ui.selectable_value(&mut self.playing, true, "▶");
