@@ -7,7 +7,10 @@ use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
     Device, Stream, StreamConfig,
 };
-use eframe::egui::{self, RichText, Ui};
+use eframe::{
+    egui::{self, RichText, Ui},
+    epaint::Color32,
+};
 use ringbuf::{HeapRb, Producer};
 
 use crate::{damper::LinearDamper, frame::Frame};
@@ -22,6 +25,7 @@ pub struct StreamInstance {
     damper: LinearDamper<f32>,
     volume: f32,
     muted: bool,
+    protection: bool,
 }
 
 impl StreamInstance {
@@ -68,6 +72,7 @@ impl StreamInstance {
             is_err,
             volume: 0.5,
             muted: false,
+            protection: false,
         })
     }
 
@@ -88,7 +93,7 @@ impl StreamInstance {
     }
 
     pub fn push_frame(&mut self, value: Frame) -> Result<(), Frame> {
-        let ampl = if self.muted {
+        let ampl = if self.muted || self.protection {
             self.damper.frame(0.0)
         } else {
             self.damper.frame(self.volume)
@@ -119,6 +124,14 @@ impl StreamInstance {
 
         ui.label(RichText::new(format!("{}", self.channels())).monospace())
             .on_hover_text_at_pointer("channels");
+
+        if self.producer.free_len() as f32 > self.producer.len() as f32 * 0.8 {
+            self.protection = true;
+            ui.separator();
+            ui.label(RichText::new("⚠ cant keep up!").color(Color32::GOLD));
+        } else {
+            self.protection = false;
+        }
     }
 }
 
