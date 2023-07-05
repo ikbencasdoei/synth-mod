@@ -257,8 +257,6 @@ impl Rack {
     pub fn show(&mut self, ctx: &Context, sample_rate: u32) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both()
-                .stick_to_bottom(true)
-                .stick_to_right(true)
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
                     let mut responses = HashMap::new();
