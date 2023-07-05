@@ -207,7 +207,7 @@ impl Output {
         if let Some(instance) = &mut self.instance_mut_or_init() {
             instance.show(ui)
         } else {
-            ui.label(" ⚠ could not initialize audio output!");
+            ui.label(RichText::new("⚠ could not initialize audio output!").color(Color32::GOLD));
             if ui.button("retry").clicked() {
                 self.init_instance();
             }
