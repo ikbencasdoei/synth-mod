@@ -66,7 +66,7 @@ impl StreamInstance {
 
         Some(Self {
             _stream: stream,
-            damper: LinearDamper::cutoff(config.sample_rate.0),
+            damper: LinearDamper::new_cutoff(config.sample_rate.0),
             config,
             producer,
             is_err,
