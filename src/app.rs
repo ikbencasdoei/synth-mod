@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use eframe::egui::{self, Context};
 #[cfg(not(target_arch = "wasm32"))]
 use eframe::epaint::Vec2;
@@ -94,11 +96,8 @@ impl App {
         self.rack.show(ctx, self.output.sample_rate_or_default());
     }
 
-    fn process(&mut self) {
+    fn process(&mut self, delta: Duration) {
         puffin::profile_function!();
-
-        let delta = self.last_instant.elapsed();
-        self.last_instant = Instant::now();
 
         if let Some(instance) = self.output.instance_mut() {
             instance.free_len();
@@ -135,9 +134,12 @@ impl eframe::App for App {
 
         puffin::profile_scope!("app");
 
+        let delta = self.last_instant.elapsed();
+        self.last_instant = Instant::now();
+
         self.show(ctx);
 
-        self.process();
+        self.process(delta);
 
         ctx.request_repaint();
     }
