@@ -17,10 +17,10 @@ pub trait Module: Any + 'static {
     where
         Self: Sized;
 
+    fn process(&mut self, ctx: &mut ProcessContext);
+
     #[allow(unused)]
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {}
-
-    fn process(&mut self, ctx: &mut ProcessContext);
 }
 
 // impl Clone for Box<dyn Module> {
