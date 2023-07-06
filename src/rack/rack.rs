@@ -283,23 +283,40 @@ impl Rack {
     }
 
     pub fn process_amount(&mut self, sample_rate: u32, amount: usize) -> Vec<Vec<Frame>> {
-        let mut frames = Vec::new();
+        puffin::profile_function!();
+
+        let mut frames = Vec::with_capacity(amount);
         let order = self.io.processing_order().clone();
-        for _ in 0..amount {
-            for order in order.iter() {
-                for handle in order {
-                    let instance = self.instances.get_mut(&handle).unwrap();
-                    let mut ctx = ProcessContext {
-                        sample_rate,
-                        handle: instance.handle,
-                        io: &mut self.io,
-                    };
+
+        //to minimise hashmap lookups pointers are used
+        //SAFETY: contents of the hashmap should not change and the every handle should be unique.
+        let pointers = {
+            order
+                .iter()
+                .flatten()
+                .map(|handle| self.instances.get_mut(handle).unwrap() as *mut _)
+                .collect::<Vec<_>>()
+        };
+
+        {
+            puffin::profile_scope!("frames");
+
+            let mut ctx = ProcessContext {
+                sample_rate,
+                handle: InstanceHandle::new(),
+                io: &mut self.io,
+            };
+
+            for _ in 0..amount {
+                for pointer in pointers.iter() {
+                    let instance: &mut Instance = unsafe { &mut **pointer };
+                    ctx.handle = instance.handle;
 
                     instance.module.process(&mut ctx)
                 }
-            }
 
-            frames.push(self.receiver.try_iter().collect::<Vec<_>>());
+                frames.push(self.receiver.try_iter().collect::<Vec<_>>());
+            }
         }
 
         frames
