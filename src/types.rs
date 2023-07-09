@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{frame::Frame, io::Conversion, module::PortValueBoxed};
 
+/// Trait all inter-module data types must implement.
 pub trait Type: Clone + 'static {
     fn define() -> TypeDefinition<Self>
     where

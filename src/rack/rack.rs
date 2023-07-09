@@ -94,6 +94,7 @@ impl Panel {
     }
 }
 
+/// Holds, draws, creates and modifies module instances and their connections.
 pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<Panel>,

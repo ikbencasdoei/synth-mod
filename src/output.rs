@@ -17,6 +17,7 @@ use crate::{damper::LinearDamper, frame::Frame};
 
 type RingProducer = Producer<Frame, Arc<HeapRb<Frame>>>;
 
+/// Instance of the application's audio output.
 pub struct StreamInstance {
     _stream: Stream,
     pub config: StreamConfig,
@@ -135,6 +136,7 @@ impl StreamInstance {
     }
 }
 
+/// Manages the application's audio output.
 pub struct Output {
     pub instance: Option<StreamInstance>,
 }

@@ -81,6 +81,7 @@ impl App {
         .unwrap();
     }
 
+    /// Draw ui
     fn show(&mut self, ctx: &Context) {
         puffin::profile_function!();
 
@@ -97,6 +98,7 @@ impl App {
         self.rack.show(ctx, self.output.sample_rate_or_default());
     }
 
+    /// Process modules & audio output
     fn process(&mut self, delta: Duration) {
         puffin::profile_function!();
 
