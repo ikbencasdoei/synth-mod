@@ -89,7 +89,7 @@ impl Instance {
 
             let handle_response = ui.add(
                 egui::Label::new(
-                    egui::RichText::new(self.handle.as_str()).color(self.handle_color),
+                    egui::RichText::new(self.handle.to_string()).color(self.handle_color),
                 )
                 .sense(Sense::click()),
             );
@@ -174,7 +174,7 @@ impl InstanceHandle {
         Self { id: typed.id }
     }
 
-    pub fn as_str(&self) -> String {
+    pub fn to_string(&self) -> String {
         self.id.as_simple().to_string().index(..8).to_string()
     }
 
