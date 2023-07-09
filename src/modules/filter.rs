@@ -83,9 +83,7 @@ impl Filter {
             ),
         };
 
-        let Ok(coeffs) = coeffs else {
-            return
-        };
+        let Ok(coeffs) = coeffs else { return };
 
         if let Some(left) = &mut self.left {
             left.update_coefficients(coeffs);
