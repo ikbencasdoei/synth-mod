@@ -61,14 +61,6 @@ impl Io {
         self.inputs.insert(port, value);
     }
 
-    pub fn set_output_dyn(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
-        if let Some(connections) = self.connections.get(&port) {
-            for connected in connections.clone().into_iter() {
-                self.set_input_dyn(connected, value.clone())
-            }
-        }
-    }
-
     /// Tries to get the input data in the correct type either directly or by converting it.
     fn try_get_input<I: Input>(&self, instance: InstanceHandle) -> Option<I::Type> {
         let boxed = self.get_input_dyn(PortHandle::new(I::id(), instance))?;
@@ -113,6 +105,15 @@ impl Io {
             value
         } else {
             I::default()
+        }
+    }
+
+    /// Propagates data to all connected ports
+    pub fn set_output_dyn(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
+        if let Some(connections) = self.connections.get(&port) {
+            for connected in connections.clone().into_iter() {
+                self.set_input_dyn(connected, value.clone())
+            }
         }
     }
 
