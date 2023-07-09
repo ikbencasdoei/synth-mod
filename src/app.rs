@@ -65,6 +65,7 @@ impl App {
             initial_window_size: Some(Vec2::new(1280.0, 720.0)),
             centered: true,
             // maximized: true,
+            follow_system_theme: false,
             ..Default::default()
         };
 
