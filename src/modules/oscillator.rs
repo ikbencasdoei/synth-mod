@@ -13,7 +13,7 @@ use crate::{
 pub enum Wave {
     Sine,
     Square,
-    Traingle,
+    Triangle,
     Saw,
 }
 
@@ -22,7 +22,7 @@ impl Wave {
         match self {
             Wave::Sine => "Sine",
             Wave::Square => "Square",
-            Wave::Traingle => "Triangle",
+            Wave::Triangle => "Triangle",
             Wave::Saw => "Saw",
         }
     }
@@ -105,7 +105,7 @@ impl Module for Oscillator {
         let mut ampl = match self.wave {
             Wave::Sine => (self.index * 2.0 * PI).sin(),
             Wave::Square => self.index.round() * 2.0 - 1.0,
-            Wave::Traingle => ((1.0 - self.index) * 4.0 - 2.0).abs() - 1.0,
+            Wave::Triangle => ((1.0 - self.index) * 4.0 - 2.0).abs() - 1.0,
             Wave::Saw => (self.index * 2.0) - 1.0,
         };
 

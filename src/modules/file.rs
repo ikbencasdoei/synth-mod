@@ -151,22 +151,22 @@ impl File {
         }
 
         let channels = spec.unwrap().channels.count();
-        let mut seperated: Vec<Vec<f32>> = (0..channels).into_iter().map(|_| Vec::new()).collect();
+        let mut separated: Vec<Vec<f32>> = (0..channels).into_iter().map(|_| Vec::new()).collect();
 
         for (i, sample) in buffer.into_iter().enumerate() {
-            seperated[i % channels].push(sample)
+            separated[i % channels].push(sample)
         }
 
         let mut resampler = FftFixedIn::<f32>::new(
             spec.unwrap().rate as usize,
             target_sample_rate,
-            seperated.first()?.len(),
+            separated.first()?.len(),
             1024,
             channels,
         )
         .unwrap();
 
-        let resampled = resampler.process(&seperated, None).ok()?;
+        let resampled = resampler.process(&separated, None).ok()?;
 
         let buffer: Vec<Frame> = match resampled.len() {
             1 => resampled[0]

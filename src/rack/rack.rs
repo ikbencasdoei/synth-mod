@@ -288,7 +288,7 @@ impl Rack {
         let mut frames = Vec::with_capacity(amount);
         let order = self.io.processing_order().clone();
 
-        //to minimise hashmap lookups pointers are used
+        //to minimize hashmap lookups pointers are used
         //SAFETY: contents of the hashmap should not change and the every handle should be unique.
         let pointers = {
             order
