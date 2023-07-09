@@ -1,6 +1,7 @@
 use rack::app::App;
 use rand::Rng;
 
+/// Generate a rack filled with random modules.
 fn main() {
     let mut app = App::default();
 

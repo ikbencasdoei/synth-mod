@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Mul};
 
+/// Holds a single audio sample either mono or stereo.
 #[derive(Clone, Copy, Debug)]
 pub enum Frame {
     Mono(f32),

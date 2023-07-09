@@ -39,6 +39,7 @@ impl Clone for Box<dyn ModuleClosure> {
     }
 }
 
+/// Non generic module description. Contains all data necessary for creating an instance.
 #[derive(Clone)]
 pub struct ModuleDescriptionDyn {
     pub name: String,

@@ -41,6 +41,7 @@ impl ConnectResult {
     }
 }
 
+/// Facilitates the data interaction between modules.
 #[derive(Default)]
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
@@ -50,10 +51,12 @@ pub struct Io {
 }
 
 impl Io {
+    /// Gets the boxed input data.
     pub fn get_input_dyn(&self, port: PortHandle) -> Option<Box<dyn PortValueBoxed>> {
         self.inputs.get(&port).cloned()
     }
 
+    /// Sets the data for an input port. Only should be used outside Io when this port is not connected.
     pub fn set_input_dyn(&mut self, port: PortHandle, value: Box<dyn PortValueBoxed>) {
         self.inputs.insert(port, value);
     }
@@ -66,6 +69,7 @@ impl Io {
         }
     }
 
+    /// Tries to get the input data in the correct type either directly or by converting it.
     fn try_get_input<I: Input>(&self, instance: InstanceHandle) -> Option<I::Type> {
         let boxed = self.get_input_dyn(PortHandle::new(I::id(), instance))?;
 
@@ -79,6 +83,7 @@ impl Io {
         }
     }
 
+    /// Tries to convert the data if an conversion exists.
     fn try_convert<I: Input>(&self, boxed: Box<dyn PortValueBoxed>) -> Option<I::Type> {
         let conversion = self.get_conversion::<I>((*boxed).type_id())?;
         let converted: Box<dyn Any> = (conversion)(boxed);
@@ -102,6 +107,7 @@ impl Io {
             .or_else(|| self.conversions.get(&conversion_id.into_general()))
     }
 
+    /// Gets input data in correct type either directly, converting it or a default value.
     pub fn get_input<I: Input>(&self, instance: InstanceHandle) -> I::Type {
         if let Some(value) = self.try_get_input::<I>(instance) {
             value
@@ -124,6 +130,7 @@ impl Io {
         None
     }
 
+    /// Connect two ports.
     pub fn connect(
         &mut self,
         from: PortHandle,
@@ -174,6 +181,7 @@ impl Io {
         }
     }
 
+    /// Returns a [`HashSet`] containing the handles to all connected input ports.
     pub fn output_connections(&self, handle: PortHandle) -> HashSet<PortHandle> {
         self.connections.get(&handle).cloned().unwrap_or_default()
     }

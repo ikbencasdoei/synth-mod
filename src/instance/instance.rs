@@ -15,6 +15,7 @@ use crate::{
     rack::rack::ShowContext,
 };
 
+/// Holds an instance of a module.
 pub struct Instance {
     pub module: Box<dyn Module>,
     pub description: ModuleDescriptionDyn,
