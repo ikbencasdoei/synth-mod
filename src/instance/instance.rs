@@ -52,7 +52,7 @@ impl Instance {
             .collect::<IndexMap<_, _>>();
 
         Self {
-            module: (description.instatiate)(),
+            module: (description.instantiate)(),
             description: description.clone(),
             handle,
             inputs,

@@ -43,7 +43,7 @@ impl Clone for Box<dyn ModuleClosure> {
 #[derive(Clone)]
 pub struct ModuleDescriptionDyn {
     pub name: String,
-    pub instatiate: Box<dyn ModuleClosure>,
+    pub instantiate: Box<dyn ModuleClosure>,
     pub inputs: Vec<PortDescriptionDyn>,
     pub outputs: Vec<PortDescriptionDyn>,
 }
@@ -52,7 +52,7 @@ impl ModuleDescriptionDyn {
     pub fn from_typed<M>(description: ModuleDescription<M>) -> Self {
         Self {
             name: description.name,
-            instatiate: description.instatiate,
+            instantiate: description.instantiate,
             inputs: description.inputs,
             outputs: description.outputs,
         }
@@ -68,7 +68,7 @@ impl ModuleDescriptionDyn {
 
 pub struct ModuleDescription<M> {
     name: String,
-    instatiate: Box<dyn ModuleClosure>,
+    instantiate: Box<dyn ModuleClosure>,
     inputs: Vec<PortDescriptionDyn>,
     outputs: Vec<PortDescriptionDyn>,
     phantom: PhantomData<M>,
@@ -78,7 +78,7 @@ impl<M: Module> ModuleDescription<M> {
     pub fn new(closure: impl Fn() -> M + Clone + 'static) -> Self {
         Self {
             name: std::any::type_name::<M>().to_string(),
-            instatiate: Box::new(move || Box::new(closure())),
+            instantiate: Box::new(move || Box::new(closure())),
             inputs: Vec::new(),
             outputs: Vec::new(),
             phantom: PhantomData,
