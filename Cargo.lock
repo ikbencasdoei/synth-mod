@@ -1849,6 +1849,7 @@ dependencies = [
  "dyn-clone",
  "eframe",
  "getrandom",
+ "image",
  "indexmap",
  "puffin",
  "puffin_egui",

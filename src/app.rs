@@ -129,7 +129,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &Context, frame: &mut eframe::Frame) {
         puffin::profile_function!();
         puffin::GlobalProfiler::lock().new_frame();
 
@@ -146,6 +146,23 @@ impl eframe::App for App {
 
         self.process(delta);
 
+        if ctx.input(|input| input.key_pressed(egui::Key::F2)) {
+            frame.request_screenshot();
+        }
+
         ctx.request_repaint();
+    }
+
+    fn post_rendering(&mut self, _: [u32; 2], frame: &eframe::Frame) {
+        if let Some(screenshot) = frame.screenshot() {
+            image::save_buffer(
+                "screenshot.png",
+                screenshot.as_raw(),
+                screenshot.width() as u32,
+                screenshot.height() as u32,
+                image::ColorType::Rgba8,
+            )
+            .unwrap();
+        }
     }
 }
