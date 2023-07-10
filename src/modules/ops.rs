@@ -18,7 +18,7 @@ impl<T: PortValueBoxed + Clone> Port for InValueA<T> {
     type Type = T;
 
     fn name() -> &'static str {
-        "b"
+        "a"
     }
 }
 
@@ -42,7 +42,7 @@ impl<T: PortValueBoxed + Clone> Port for InValueB<T> {
     type Type = T;
 
     fn name() -> &'static str {
-        "a"
+        "b"
     }
 }
 
