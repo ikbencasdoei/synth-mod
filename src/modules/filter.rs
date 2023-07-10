@@ -142,7 +142,7 @@ impl Module for Filter {
                 self.update_coeffs(ctx.sample_rate)
             }
 
-            egui::ComboBox::new(ctx.instance, "wave")
+            egui::ComboBox::from_id_source(ctx.instance)
                 .selected_text(format!("{:?}", self.filter_type.as_str()))
                 .show_ui(ui, |ui| {
                     for filter in FilterType::iter() {
