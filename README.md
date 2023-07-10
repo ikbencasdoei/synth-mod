@@ -1,6 +1,6 @@
 ![screenshot](screenshot.png)
 # Rack
-A virtual modular synthesizer.
+A virtual modular synthesizer, written in Rust.
 
 # Concept
 I was interested in sound production so I made this.
