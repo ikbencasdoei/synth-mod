@@ -136,8 +136,6 @@ impl Instance {
             1.0,
         )
         .into()
-
-        // Rgba::from_rgb(rand::random(), rand::random(), rand::random()).into()
     }
 }
 

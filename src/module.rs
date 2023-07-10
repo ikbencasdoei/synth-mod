@@ -23,12 +23,6 @@ pub trait Module: Any + 'static {
     fn show(&mut self, ctx: &ShowContext, ui: &mut Ui) {}
 }
 
-// impl Clone for Box<dyn Module> {
-//     fn clone(&self) -> Self {
-//         dyn_clone::clone_box(&**self)
-//     }
-// }
-
 pub trait ModuleClosure: Fn() -> Box<dyn Module> + DynClone + 'static {}
 
 impl<F: Fn() -> Box<dyn Module> + DynClone + 'static> ModuleClosure for F {}
@@ -110,8 +104,6 @@ pub trait PortValueBoxed: Any + DynClone + 'static {
     fn to_string(&self) -> String;
     fn as_value(&self) -> f32;
 }
-
-// impl<T: Any + DynClone + 'static> PortValueBoxed for T {}
 
 impl Clone for Box<dyn PortValueBoxed> {
     fn clone(&self) -> Self {

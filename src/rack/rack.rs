@@ -83,14 +83,6 @@ impl Panel {
 
             rack.panels.get_mut(index).unwrap().width = ui.min_rect().size().x;
         });
-
-        let sep_response = ui.separator();
-        if ui
-            .interact(sep_response.rect, sep_response.id, Sense::drag())
-            .dragged()
-        {
-            // dbg!(index);
-        }
     }
 }
 
