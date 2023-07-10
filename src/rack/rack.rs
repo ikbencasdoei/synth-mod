@@ -6,7 +6,7 @@ use std::{
 
 use eframe::{
     self,
-    egui::{self, Button, Context, Sense, Ui},
+    egui::{self, Button, Context, Ui},
 };
 
 use super::response::RackResponse;
