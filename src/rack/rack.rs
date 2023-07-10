@@ -83,6 +83,8 @@ impl Panel {
 
             rack.panels.get_mut(index).unwrap().width = ui.min_rect().size().x;
         });
+
+        ui.separator();
     }
 }
 
