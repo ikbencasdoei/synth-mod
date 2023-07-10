@@ -1,7 +1,7 @@
 use eframe::{
     egui::{self, Button, Layout, Margin, RichText, Sense, Ui},
     emath::Align,
-    epaint::{Color32, Hsva, Pos2, Shadow, Stroke, Vec2},
+    epaint::{Color32, Hsva, Pos2, Rect, Shadow, Stroke, Vec2},
 };
 
 use super::instance::InstanceHandle;
@@ -99,49 +99,7 @@ impl PortInstance {
         response.position = rect.center();
 
         if ui.is_rect_visible(rect) {
-            let visuals = ui.style().interact(&port_response);
-            let rect = rect.expand(visuals.expansion);
-            let radius = 0.5 * rect.height();
-            let inner_radius = 0.5 * radius;
-            let stroke = Stroke::new(visuals.fg_stroke.width + 0.5, visuals.fg_stroke.color);
-
-            ui.painter()
-                .circle(rect.center(), radius, visuals.bg_fill, stroke);
-
-            match self.description.port_type {
-                PortType::Input => {
-                    ui.painter()
-                        .circle(rect.center(), inner_radius, visuals.bg_fill, stroke);
-
-                    let value: f32 = if ctx.has_connection(self.handle) {
-                        if let Some(boxed) = ctx.get_input_boxed(self.handle) {
-                            boxed.as_value()
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        0.0
-                    };
-
-                    ui.painter().circle_filled(
-                        rect.center(),
-                        0.5 * inner_radius,
-                        Hsva::new(0.5, 1.0, value.clamp(0.0, 1.0), 1.0),
-                    );
-                }
-                PortType::Output => {
-                    if !ctx.has_connection(self.handle) {
-                        ui.painter().circle_filled(
-                            rect.center(),
-                            inner_radius,
-                            visuals.fg_stroke.color,
-                        );
-                    } else {
-                        ui.painter()
-                            .circle_filled(rect.center(), inner_radius, Color32::WHITE);
-                    }
-                }
-            }
+            self.paint_port_visual(rect, &port_response, ctx, ui)
         }
 
         if let PortType::Input = self.description.port_type {
@@ -155,6 +113,58 @@ impl PortInstance {
                     .expect("this closure should be available on input ports")(
                     self.handle, ctx
                 ));
+            }
+        }
+    }
+
+    fn paint_port_visual(
+        &self,
+        rect: Rect,
+        response: &eframe::egui::Response,
+        ctx: &mut ShowContext,
+        ui: &mut Ui,
+    ) {
+        let visuals = ui.style().interact(&response);
+        let rect = rect.expand(visuals.expansion);
+        let radius = 0.5 * rect.height();
+        let inner_radius = 0.5 * radius;
+        let stroke = Stroke::new(visuals.fg_stroke.width + 0.5, visuals.fg_stroke.color);
+
+        ui.painter()
+            .circle(rect.center(), radius, visuals.bg_fill, stroke);
+
+        match self.description.port_type {
+            PortType::Input => {
+                ui.painter()
+                    .circle(rect.center(), inner_radius, visuals.bg_fill, stroke);
+
+                let value: f32 = if ctx.has_connection(self.handle) {
+                    if let Some(boxed) = ctx.get_input_boxed(self.handle) {
+                        boxed.as_value()
+                    } else {
+                        0.0
+                    }
+                } else {
+                    0.0
+                };
+
+                ui.painter().circle_filled(
+                    rect.center(),
+                    0.5 * inner_radius,
+                    Hsva::new(0.5, 1.0, value.clamp(0.0, 1.0), 1.0),
+                );
+            }
+            PortType::Output => {
+                if !ctx.has_connection(self.handle) {
+                    ui.painter().circle_filled(
+                        rect.center(),
+                        inner_radius,
+                        visuals.fg_stroke.color,
+                    );
+                } else {
+                    ui.painter()
+                        .circle_filled(rect.center(), inner_radius, Color32::WHITE);
+                }
             }
         }
     }
