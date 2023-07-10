@@ -11,6 +11,7 @@ use crate::{
     rack::rack::ShowContext,
 };
 
+/// Holds an instance of a [`crate::module::Port`]
 pub struct PortInstance {
     pub description: PortDescriptionDyn,
     dragging: bool,
@@ -159,6 +160,7 @@ impl PortInstance {
     }
 }
 
+/// Contains useful data after drawing an instance's ui.
 pub struct PortResponse {
     pub description: PortDescriptionDyn,
     pub position: Pos2,

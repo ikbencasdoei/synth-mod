@@ -24,6 +24,7 @@ impl Input for AudioInput {
     }
 }
 
+/// The audio output module
 pub struct Audio {
     pub volume: f32,
     pub sender: Option<Sender<Frame>>,

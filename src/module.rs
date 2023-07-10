@@ -12,6 +12,7 @@ use crate::{
     rack::rack::{ProcessContext, ShowContext},
 };
 
+/// Trait all rack modules implement
 pub trait Module: Any + 'static {
     fn describe() -> ModuleDescription<Self>
     where

@@ -15,7 +15,7 @@ use crate::{
     rack::rack::ShowContext,
 };
 
-/// Holds an instance of a module.
+/// Holds an instance of a [`Module`].
 pub struct Instance {
     pub module: Box<dyn Module>,
     pub description: ModuleDescriptionDyn,
@@ -128,6 +128,7 @@ impl Instance {
         response
     }
 
+    /// Generates a random color that should be readable on a dark background.
     fn random_color() -> Color32 {
         Hsva::new(
             rand::random(),
@@ -139,6 +140,7 @@ impl Instance {
     }
 }
 
+/// Contains useful data after drawing an instance's ui.
 pub struct InstanceResponse {
     pub handle: InstanceHandle,
     pub remove: bool,
@@ -159,12 +161,14 @@ impl InstanceResponse {
     }
 }
 
+/// Identifies an [`Instance`]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct InstanceHandle {
     id: Uuid,
 }
 
 impl InstanceHandle {
+    /// Generates a random handle.
     pub fn new() -> Self {
         Self { id: Uuid::new_v4() }
     }

@@ -50,6 +50,7 @@ impl FilterType {
     }
 }
 
+/// A low or high pass frequency filter [`Module`]
 pub struct Filter {
     left: Option<DirectForm1<f32>>,
     right: Option<DirectForm1<f32>>,

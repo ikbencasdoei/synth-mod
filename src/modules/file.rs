@@ -39,6 +39,7 @@ enum Message {
     PickedFile(PathBuf),
 }
 
+/// A [`Module`] that decodes and plays files
 pub struct File {
     pub buffer: Vec<Frame>,
     pub seek: usize,
