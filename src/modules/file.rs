@@ -185,6 +185,7 @@ impl File {
         Some(buffer)
     }
 
+    #[allow(dead_code)]
     pub fn open_file(&self, path: impl AsRef<Path>) {
         self.sender
             .send(Message::PickedFile(path.as_ref().into()))
