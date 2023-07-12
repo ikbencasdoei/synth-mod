@@ -185,6 +185,12 @@ impl File {
         Some(buffer)
     }
 
+    pub fn open_file(&self, path: impl AsRef<Path>) {
+        self.sender
+            .send(Message::PickedFile(path.as_ref().into()))
+            .ok();
+    }
+
     fn update(&mut self, sample_rate: usize) {
         self.loading = true;
         std::thread::spawn({
