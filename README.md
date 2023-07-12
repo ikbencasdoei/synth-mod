@@ -15,5 +15,13 @@ At this stage the base has only just been laid and the capabilities are very lim
 - Math operations.
 - Filters.
 
+# Technologies used
+- [Rust](https://www.rust-lang.org)
+- [egui](https://www.egui.rs)+[eframe](https://github.com/emilk/egui/tree/master/crates/eframe) - ui
+- [Symphonia](https://github.com/pdeljanov/Symphonia) - file decoding
+- [CPAL](https://github.com/rustaudio/cpal) - audio playback
+- [rubato](https://github.com/HEnquist/rubato) - resampling
+- [biquad](https://github.com/korken89/biquad-rs) - filters
 
+See [Cargo.toml](Cargo.toml) for more information.
 
