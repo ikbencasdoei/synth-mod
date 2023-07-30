@@ -5,7 +5,6 @@ use rack::{
     modules::{
         audio::{Audio, AudioInput},
         file::{File, FileOutput},
-        oscillator::{FrameOutput, Oscillator},
         scope::{Scope, ScopeInput},
     },
 };
