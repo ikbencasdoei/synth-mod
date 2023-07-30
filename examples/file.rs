@@ -32,7 +32,7 @@ fn main() {
         .unwrap();
 
     app.rack
-        .get_module_mut(&file)
+        .get_module_mut(file)
         .unwrap()
         .open_file("sample.mp3");
 

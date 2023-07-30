@@ -226,12 +226,12 @@ impl Rack {
     }
 
     #[allow(unused)]
-    pub fn get_module<T: Module>(&self, handle: &TypedInstanceHandle<T>) -> Option<&T> {
+    pub fn get_module<T: Module>(&self, handle: TypedInstanceHandle<T>) -> Option<&T> {
         self.instances.get(&handle.as_untyped())?.get_module()
     }
 
     #[allow(unused)]
-    pub fn get_module_mut<T: Module>(&mut self, handle: &TypedInstanceHandle<T>) -> Option<&mut T> {
+    pub fn get_module_mut<T: Module>(&mut self, handle: TypedInstanceHandle<T>) -> Option<&mut T> {
         self.instances
             .get_mut(&handle.as_untyped())?
             .get_module_mut()
