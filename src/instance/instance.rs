@@ -186,11 +186,28 @@ impl InstanceHandle {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+impl<T> From<TypedInstanceHandle<T>> for InstanceHandle {
+    fn from(value: TypedInstanceHandle<T>) -> Self {
+        value.as_untyped()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub struct TypedInstanceHandle<T> {
     id: Uuid,
     phantom: PhantomData<T>,
 }
+
+impl<T> Clone for TypedInstanceHandle<T> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id.clone(),
+            phantom: self.phantom.clone(),
+        }
+    }
+}
+
+impl<T> Copy for TypedInstanceHandle<T> {}
 
 impl<T> TypedInstanceHandle<T> {
     pub fn new() -> Self {

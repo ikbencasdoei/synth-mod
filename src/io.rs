@@ -275,8 +275,11 @@ pub struct PortHandle {
 }
 
 impl PortHandle {
-    pub fn new(id: PortId, instance: InstanceHandle) -> Self {
-        Self { id, instance }
+    pub fn new(id: PortId, instance: impl Into<InstanceHandle>) -> Self {
+        Self {
+            id,
+            instance: instance.into(),
+        }
     }
 
     pub fn is_compatible(&self, other: Self) -> ConnectResult {

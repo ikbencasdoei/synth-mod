@@ -18,15 +18,15 @@ fn main() {
 
     app.rack
         .connect(
-            PortHandle::new(FileOutput::id(), file.as_untyped()),
-            PortHandle::new(AudioInput::id(), audio.as_untyped()),
+            PortHandle::new(FileOutput::id(), file),
+            PortHandle::new(AudioInput::id(), audio),
         )
         .unwrap();
 
     app.rack
         .connect(
-            PortHandle::new(FileOutput::id(), file.as_untyped()),
-            PortHandle::new(ScopeInput::id(), scope.as_untyped()),
+            PortHandle::new(FileOutput::id(), file),
+            PortHandle::new(ScopeInput::id(), scope),
         )
         .unwrap();
 
