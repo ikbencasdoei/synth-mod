@@ -1840,35 +1840,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rack"
-version = "0.1.0"
-dependencies = [
- "biquad",
- "console_error_panic_hook",
- "cpal",
- "dyn-clone",
- "eframe",
- "getrandom",
- "image",
- "indexmap",
- "puffin",
- "puffin_egui",
- "rand",
- "rfd",
- "ringbuf",
- "rubato",
- "strum",
- "strum_macros",
- "symphonia",
- "topological-sort",
- "uuid",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-timer",
- "web-sys",
-]
-
-[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2377,6 +2348,35 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "synth-mod"
+version = "0.1.0"
+dependencies = [
+ "biquad",
+ "console_error_panic_hook",
+ "cpal",
+ "dyn-clone",
+ "eframe",
+ "getrandom",
+ "image",
+ "indexmap",
+ "puffin",
+ "puffin_egui",
+ "rand",
+ "rfd",
+ "ringbuf",
+ "rubato",
+ "strum",
+ "strum_macros",
+ "symphonia",
+ "topological-sort",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-timer",
+ "web-sys",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 ![screenshot](screenshot.png)
-# Rack
+# Synth-mod
 A virtual [modular synthesizer](https://en.wikipedia.org/wiki/Modular_synthesizer), written in Rust.
 
 # Concept

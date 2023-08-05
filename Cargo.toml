@@ -1,5 +1,5 @@
 [package]
-name = "rack"
+name = "synth-mod"
 version = "0.1.0"
 edition = "2021"
 authors = ["Cas Brugman <casbrugman@hotmail.nl>"]
@@ -61,5 +61,3 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
-
-

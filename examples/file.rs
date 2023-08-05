@@ -1,4 +1,4 @@
-use rack::{
+use synth_mod::{
     app::App,
     io::PortHandle,
     module::Port,

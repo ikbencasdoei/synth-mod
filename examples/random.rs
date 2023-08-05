@@ -1,5 +1,5 @@
-use rack::app::App;
 use rand::Rng;
+use synth_mod::app::App;
 
 /// Generate a rack filled with random modules.
 fn main() {
