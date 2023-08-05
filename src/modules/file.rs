@@ -228,7 +228,7 @@ impl Module for File {
     where
         Self: Sized,
     {
-        ModuleDescription::new(File::default)
+        ModuleDescription::default()
             .name("📁 File")
             .port(PortDescription::<FileOutput>::output())
     }

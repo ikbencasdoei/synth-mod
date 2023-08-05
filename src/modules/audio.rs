@@ -41,12 +41,9 @@ impl Default for Audio {
 
 impl Module for Audio {
     fn describe() -> ModuleDescription<Self> {
-        ModuleDescription::new(Audio::default)
-            .name("🔊 Audio Output")
-            .port(
-                PortDescription::<AudioInput>::input()
-                    .conversion(|sample: f32| Frame::Mono(sample)),
-            )
+        ModuleDescription::default().name("🔊 Audio Output").port(
+            PortDescription::<AudioInput>::input().conversion(|sample: f32| Frame::Mono(sample)),
+        )
     }
 
     fn show(&mut self, _: &ShowContext, ui: &mut Ui) {

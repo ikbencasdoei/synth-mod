@@ -143,7 +143,7 @@ impl Module for Keyboard {
     where
         Self: Sized,
     {
-        ModuleDescription::new(Keyboard::default)
+        ModuleDescription::default()
             .name("🎹 Keyboard")
             .port(PortDescription::<KeyboardFreqOutput>::output())
             .port(PortDescription::<KeyboardPressedOutput>::output())

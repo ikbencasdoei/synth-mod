@@ -83,7 +83,7 @@ impl Scope {
 
 impl Module for Scope {
     fn describe() -> ModuleDescription<Self> {
-        ModuleDescription::new(Scope::default)
+        ModuleDescription::default()
             .name("📈 Scope")
             .port(
                 PortDescription::<ScopeInput>::input()

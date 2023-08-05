@@ -81,7 +81,7 @@ impl Default for Oscillator {
 
 impl Module for Oscillator {
     fn describe() -> ModuleDescription<Self> {
-        ModuleDescription::new(Oscillator::default)
+        ModuleDescription::default()
             .name("📉 Oscillator")
             .port(PortDescription::<FrequencyInput>::input())
             .port(PortDescription::<FrameOutput>::output())

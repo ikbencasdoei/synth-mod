@@ -58,8 +58,8 @@ pub struct Filter {
     cutoff: f32,
 }
 
-impl Filter {
-    pub fn new() -> Self {
+impl Default for Filter {
+    fn default() -> Self {
         Self {
             left: None,
             right: None,
@@ -67,7 +67,9 @@ impl Filter {
             cutoff: 50.0,
         }
     }
+}
 
+impl Filter {
     fn update_coeffs(&mut self, sample_rate: u32) {
         let coeffs = match self.filter_type {
             FilterType::LowPass => biquad::Coefficients::<f32>::from_params(
@@ -105,7 +107,7 @@ impl Module for Filter {
     where
         Self: Sized,
     {
-        ModuleDescription::new(|| Filter::new())
+        ModuleDescription::default()
             .name("🕳 Filter")
             .port(PortDescription::<FilterInput>::input())
             .port(PortDescription::<FilterOutput>::output())

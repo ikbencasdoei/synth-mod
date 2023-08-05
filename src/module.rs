@@ -69,6 +69,12 @@ pub struct ModuleDescription<M> {
     phantom: PhantomData<M>,
 }
 
+impl<M: Default + Module> Default for ModuleDescription<M> {
+    fn default() -> Self {
+        Self::new(M::default)
+    }
+}
+
 impl<M: Module> ModuleDescription<M> {
     pub fn new(closure: impl Fn() -> M + Clone + 'static) -> Self {
         Self {

@@ -95,8 +95,8 @@ pub struct Operation<T> {
     phantom: PhantomData<T>,
 }
 
-impl<T> Operation<T> {
-    pub fn new() -> Self {
+impl<T> Default for Operation<T> {
+    fn default() -> Self {
         Self {
             operator: Operator::default(),
             phantom: PhantomData,
@@ -115,7 +115,7 @@ where
     <InValueA<T> as Port>::Type: Div<<InValueB<T> as Port>::Type, Output = T>,
 {
     fn describe() -> ModuleDescription<Self> {
-        ModuleDescription::new(|| Operation::new())
+        ModuleDescription::default()
             .name(&format!("➕✖Operation<{}>", T::name()))
             .port(PortDescription::<InValueA<T>>::input())
             .port(PortDescription::<InValueB<T>>::input())

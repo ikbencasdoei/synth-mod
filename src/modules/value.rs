@@ -17,18 +17,10 @@ impl<T: PortValueBoxed + Clone> Port for ValueOutput<T> {
     }
 }
 
+#[derive(Default)]
 pub struct Value<T> {
     value: T,
     phantom: PhantomData<T>,
-}
-
-impl<T: Default> Value<T> {
-    pub fn new() -> Self {
-        Self {
-            value: T::default(),
-            phantom: PhantomData,
-        }
-    }
 }
 
 pub trait Edit {
@@ -50,7 +42,7 @@ impl<T: Edit + PortValueBoxed + Clone + Default> Module for Value<T> {
     where
         Self: Sized,
     {
-        ModuleDescription::new(|| Value::<T>::new())
+        ModuleDescription::default()
             .name(&format!("⎙ Value<{}>", T::name()))
             .port(PortDescription::<ValueOutput<T>>::output())
     }
