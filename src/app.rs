@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::VecDeque, time::Duration};
 
 use eframe::egui::{self, Context};
 #[cfg(not(target_arch = "wasm32"))]
@@ -14,6 +14,7 @@ pub struct App {
     pub rack: Rack,
     output: Output,
     last_instant: Instant,
+    last_deltas: VecDeque<Duration>,
 }
 
 impl Default for App {
@@ -24,6 +25,7 @@ impl Default for App {
             rack: Rack::default(),
             output: Output::new(),
             last_instant: Instant::now(),
+            last_deltas: VecDeque::new(),
         }
     }
 }
@@ -82,7 +84,7 @@ impl App {
     }
 
     /// Draw ui
-    fn show(&mut self, ctx: &Context) {
+    fn show(&mut self, ctx: &Context, avg_delta: Duration) {
         puffin::profile_function!();
 
         egui::TopBottomPanel::top("top").show(ctx, |ui| {
@@ -91,6 +93,10 @@ impl App {
                 ui.separator();
 
                 self.output.show(ui);
+                ui.separator();
+
+                ui.label(format!("{:.1}ms", avg_delta.as_secs_f32() * 1000.0))
+                    .on_hover_text_at_pointer("average frame time");
                 ui.separator();
             });
         });
@@ -140,9 +146,17 @@ impl eframe::App for App {
         puffin::profile_scope!("app");
 
         let delta = self.last_instant.elapsed();
+
+        self.last_deltas.push_front(delta);
+        if self.last_deltas.len() > 50 {
+            self.last_deltas.pop_back();
+        }
+
+        let avg_delta = self.last_deltas.iter().sum::<Duration>() / self.last_deltas.len() as u32;
+
         self.last_instant = Instant::now();
 
-        self.show(ctx);
+        self.show(ctx, avg_delta);
 
         self.process(delta);
 
