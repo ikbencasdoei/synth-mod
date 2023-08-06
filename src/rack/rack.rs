@@ -1,9 +1,9 @@
 use std::{
     any::Any,
-    collections::{HashMap, HashSet},
     sync::mpsc::{Receiver, Sender},
 };
 
+use ahash::{HashMap, HashMapExt, HashSet};
 use eframe::{
     self,
     egui::{self, Button, Context, Ui},

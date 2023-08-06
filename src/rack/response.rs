@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use ahash::HashMap;
 use eframe::{
     egui::{self, Id, LayerId, Order, Ui},
     epaint::{Color32, Hsva, Pos2, QuadraticBezierShape, Rgba, Shape, Stroke},

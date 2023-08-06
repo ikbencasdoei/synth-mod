@@ -1,8 +1,6 @@
-use std::{
-    any::{Any, TypeId},
-    collections::{HashMap, HashSet},
-};
+use std::any::{Any, TypeId};
 
+use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use topological_sort::TopologicalSort;
 
 use crate::{

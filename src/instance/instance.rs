@@ -1,5 +1,6 @@
-use std::{any::Any, collections::HashMap, marker::PhantomData, ops::Index};
+use std::{any::Any, marker::PhantomData, ops::Index};
 
+use ahash::{HashMap, HashMapExt};
 use eframe::{
     egui::{self, Sense, Ui},
     epaint::{Color32, Hsva},
