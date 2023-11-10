@@ -8,7 +8,7 @@ use dyn_clone::DynClone;
 use eframe::{self, egui::Ui};
 
 use crate::{
-    io::{ConnectResult, Conversion, PortHandle},
+    io::{ConnectResult, ConnectResultErr, Conversion, PortHandle},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -278,7 +278,7 @@ impl PortId {
         if self.value_type == other.value_type {
             ConnectResult::Ok
         } else {
-            ConnectResult::InCompatible
+            ConnectResult::Err(ConnectResultErr::InCompatible)
         }
     }
 }

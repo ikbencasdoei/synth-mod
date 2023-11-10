@@ -18,7 +18,7 @@ use crate::{
         instance::{Instance, InstanceHandle, InstanceResponse, TypedInstanceHandle},
         port::PortInstance,
     },
-    io::{ConnectResult, Io, PortHandle},
+    io::{ConnectResult, ConnectResultWarn, Io, PortHandle},
     module::{Input, Module, ModuleDescriptionDyn, Port, PortValueBoxed},
     modules::{
         audio::Audio, filter::Filter, keyboard::Keyboard, ops::Operation, oscillator::Oscillator,
@@ -193,19 +193,19 @@ impl Rack {
     }
 
     pub fn connect(&mut self, from: PortHandle, to: PortHandle) -> Result<(), &'static str> {
-        match self.io.can_connect(from, to).into_result() {
-            Err(err) => return Err(err.as_str()),
-            Ok(can_connect) => {
-                if let ConnectResult::Replace(from, to) = can_connect {
+        let result = self.io.can_connect(from, to);
+
+        match result {
+            ConnectResult::Ok | ConnectResult::Warn(_) => {
+                if let ConnectResult::Warn(ConnectResultWarn::Replace(from, to)) = result {
                     self.disconnect(from, to)
                 }
 
-                self.io
-                    .connect(from, to)
-                    .expect("io.can_connect should prevent this");
+                self.io.connect(from, to);
 
                 Ok(())
             }
+            ConnectResult::Err(err) => return Err(err.as_str()),
         }
     }
 

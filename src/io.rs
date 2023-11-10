@@ -9,32 +9,48 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug)]
-pub enum ConnectResult {
-    Ok,
+pub enum ConnectResultWarn {
     Replace(PortHandle, PortHandle),
-    SameInstance,
-    InCompatible,
     Conversion,
 }
 
-impl ConnectResult {
-    pub fn into_result(self) -> Result<ConnectResult, ConnectResult> {
+impl ConnectResultWarn {
+    pub fn as_str(&self) -> &'static str {
         match self {
-            ConnectResult::Ok => Ok(self),
-            ConnectResult::Replace(..) => Ok(self),
-            ConnectResult::SameInstance => Err(self),
-            ConnectResult::InCompatible => Err(self),
-            ConnectResult::Conversion => Ok(self),
+            ConnectResultWarn::Replace(..) => "replace",
+            ConnectResultWarn::Conversion => "conversion",
         }
     }
+}
 
+#[derive(Clone, Copy, Debug)]
+pub enum ConnectResultErr {
+    SameInstance,
+    InCompatible,
+}
+
+impl ConnectResultErr {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ConnectResultErr::SameInstance => "same instance",
+            ConnectResultErr::InCompatible => "incompatible",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ConnectResult {
+    Ok,
+    Warn(ConnectResultWarn),
+    Err(ConnectResultErr),
+}
+
+impl ConnectResult {
     pub fn as_str(&self) -> &'static str {
         match self {
             ConnectResult::Ok => "ok",
-            ConnectResult::Replace(..) => "replace",
-            ConnectResult::SameInstance => "same instance",
-            ConnectResult::InCompatible => "incompatible",
-            ConnectResult::Conversion => "convert type",
+            ConnectResult::Warn(w) => w.as_str(),
+            ConnectResult::Err(e) => e.as_str(),
         }
     }
 }
@@ -130,13 +146,9 @@ impl Io {
     }
 
     /// Connect two ports.
-    pub fn connect(
-        &mut self,
-        from: PortHandle,
-        to: PortHandle,
-    ) -> Result<ConnectResult, ConnectResult> {
-        let can_connect = self.can_connect(from, to).into_result();
-        if can_connect.is_err() {
+    pub fn connect(&mut self, from: PortHandle, to: PortHandle) -> ConnectResult {
+        let can_connect = self.can_connect(from, to);
+        if let ConnectResult::Err(_) = can_connect {
             return can_connect;
         }
 
@@ -152,18 +164,18 @@ impl Io {
     pub fn can_connect(&self, from: PortHandle, to: PortHandle) -> ConnectResult {
         let mut result = from.is_compatible(to);
 
-        if let ConnectResult::InCompatible = result {
+        if let ConnectResult::Err(ConnectResultErr::InCompatible) = result {
             let conversion_id = ConversionId::from_ports(from, to);
             if self.conversions.contains_key(&conversion_id)
                 || self.conversions.contains_key(&conversion_id.into_general())
             {
-                result = ConnectResult::Conversion;
+                result = ConnectResult::Warn(ConnectResultWarn::Conversion);
             }
         }
 
-        if let ConnectResult::Ok | ConnectResult::Conversion = result {
+        if let ConnectResult::Ok | ConnectResult::Warn(_) = result {
             if let Some(connection) = self.input_connection(to) {
-                ConnectResult::Replace(connection, to)
+                ConnectResult::Warn(ConnectResultWarn::Replace(connection, to))
             } else {
                 result
             }
@@ -281,7 +293,11 @@ impl PortHandle {
     }
 
     pub fn is_compatible(&self, other: Self) -> ConnectResult {
-        self.id.is_compatible(other.id)
+        if self.instance == other.instance {
+            ConnectResult::Err(ConnectResultErr::SameInstance)
+        } else {
+            self.id.is_compatible(other.id)
+        }
     }
 }
 
