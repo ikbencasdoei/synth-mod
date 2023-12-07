@@ -25,7 +25,7 @@ impl Module for Noise {
         Self: Sized,
     {
         ModuleDescription::default()
-            .name("⎙ Noise")
+            .name("✨ Noise")
             .port(PortDescription::<NoiseOutput>::output())
     }
 
