@@ -16,6 +16,7 @@ pub struct PortInstance {
     pub description: PortDescriptionDyn,
     dragging: bool,
     pub handle: PortHandle,
+    last_value: f32,
 }
 
 impl PortInstance {
@@ -24,6 +25,7 @@ impl PortInstance {
             description: description.clone(),
             dragging: false,
             handle: PortHandle::new(description.id, instance),
+            last_value: 0.0,
         }
     }
 
@@ -118,7 +120,7 @@ impl PortInstance {
     }
 
     fn paint_port_visual(
-        &self,
+        &mut self,
         rect: Rect,
         response: &eframe::egui::Response,
         ctx: &mut ShowContext,
@@ -138,9 +140,9 @@ impl PortInstance {
                 ui.painter()
                     .circle(rect.center(), inner_radius, visuals.bg_fill, stroke);
 
-                let value: f32 = if ctx.has_connection(self.handle) {
+                let mut value: f32 = if ctx.has_connection(self.handle) {
                     if let Some(boxed) = ctx.get_input_boxed(self.handle) {
-                        boxed.as_value()
+                        boxed.as_value().abs().min(1.0)
                     } else {
                         0.0
                     }
@@ -148,10 +150,16 @@ impl PortInstance {
                     0.0
                 };
 
+                if value < self.last_value {
+                    value = self.last_value - (self.last_value - value).min(0.05)
+                }
+
+                self.last_value = value;
+
                 ui.painter().circle_filled(
                     rect.center(),
                     0.5 * inner_radius,
-                    Hsva::new(0.5, 1.0, value.clamp(0.0, 1.0), 1.0),
+                    Hsva::new(0.5, 1.0, value, 1.0),
                 );
             }
             PortType::Output => {
