@@ -1,11 +1,8 @@
 use eframe::{
-    egui::{
-        self,
-        plot::{Legend, Line, Plot},
-        Ui,
-    },
+    egui::{self, Ui},
     epaint::Color32,
 };
+use egui_plot::{Legend, Line, Plot};
 
 use crate::{
     frame::Frame,
