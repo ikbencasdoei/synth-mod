@@ -4,12 +4,12 @@ use std::{
 };
 
 use eframe::egui::{self, Ui};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use enum_iterator::Sequence;
 
 use crate::{
     module::{Input, Module, ModuleDescription, Port, PortDescription, PortValueBoxed},
     rack::rack::{ProcessContext, ShowContext},
+    util::EnumIter,
 };
 
 pub struct InValueA<T>(PhantomData<T>);
@@ -70,7 +70,7 @@ impl<T: PortValueBoxed + Clone> Port for OutValue<T> {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, EnumIter)]
+#[derive(Clone, Copy, Default, PartialEq, Sequence)]
 enum Operator {
     #[default]
     Add,

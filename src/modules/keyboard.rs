@@ -4,15 +4,15 @@ use eframe::{
     egui::{self, style::Widgets, Layout, Ui},
     epaint::{Color32, Hsva, Vec2},
 };
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use enum_iterator::Sequence;
 
 use crate::{
     module::{Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
+    util::EnumIter,
 };
 
-#[derive(Clone, Copy, EnumIter)]
+#[derive(Clone, Copy, Sequence)]
 enum Tone {
     C,
     Cs,

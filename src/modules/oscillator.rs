@@ -1,15 +1,15 @@
 use std::f32::consts::PI;
 
 use eframe::egui::{self, Ui};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use enum_iterator::Sequence;
 
 use crate::{
     module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
+    util::EnumIter,
 };
 
-#[derive(Clone, Copy, PartialEq, EnumIter)]
+#[derive(Clone, Copy, PartialEq, Sequence)]
 pub enum Wave {
     Sine,
     Square,

@@ -1,12 +1,12 @@
 use biquad::{Biquad, DirectForm1, ToHertz};
 use eframe::egui::{self, Ui};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use enum_iterator::Sequence;
 
 use crate::{
     frame::Frame,
     module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
+    util::EnumIter,
 };
 
 pub struct FilterInput;
@@ -35,7 +35,7 @@ impl Port for FilterOutput {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, EnumIter)]
+#[derive(Clone, Copy, PartialEq, Sequence)]
 enum FilterType {
     LowPass,
     HighPass,
