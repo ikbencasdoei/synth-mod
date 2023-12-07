@@ -24,7 +24,7 @@ pub struct StreamInstance {
     producer: RingProducer,
     is_err: Arc<AtomicBool>,
     damper: LinearDamper<f32>,
-    volume: f32,
+    pub volume: f32,
     muted: bool,
     protection: bool,
 }

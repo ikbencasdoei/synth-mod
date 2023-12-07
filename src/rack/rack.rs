@@ -21,8 +21,8 @@ use crate::{
     io::{ConnectResult, ConnectResultWarn, Io, PortHandle},
     module::{Input, Module, ModuleDescriptionDyn, Port, PortValueBoxed},
     modules::{
-        audio::Audio, filter::Filter, keyboard::Keyboard, ops::Operation, oscillator::Oscillator,
-        scope::Scope, value::Value,
+        audio::Audio, filter::Filter, keyboard::Keyboard, noise::Noise, ops::Operation,
+        oscillator::Oscillator, scope::Scope, value::Value,
     },
     types::{Type, TypeDefinitionDyn},
 };
@@ -126,6 +126,7 @@ impl Default for Rack {
         #[cfg(not(target_arch = "wasm32"))]
         new.init_module::<File>();
         new.init_module::<Filter>();
+        new.init_module::<Noise>();
 
         new
     }

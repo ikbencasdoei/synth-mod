@@ -33,5 +33,9 @@ fn main() {
         app.rack.connect(from, input).ok();
     }
 
+    app.output
+        .instance_mut()
+        .map(|instance| instance.volume = 0.0);
+
     app.run()
 }

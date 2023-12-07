@@ -12,7 +12,7 @@ const PROFILING: bool = false;
 
 pub struct App {
     pub rack: Rack,
-    output: Output,
+    pub output: Output,
     last_instant: Instant,
     last_deltas: VecDeque<Duration>,
 }
