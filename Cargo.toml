@@ -2,9 +2,7 @@
 name = "synth-mod"
 version = "0.1.0"
 edition = "2021"
-authors = [
-    "Cas Brugman <casbrugman@hotmail.nl>",
-]
+authors = ["Cas Brugman <casbrugman@hotmail.nl>"]
 
 [dependencies]
 ahash = "0.8.3"
@@ -18,9 +16,7 @@ rand = "0.8.5"
 rfd = "0.11.4"
 ringbuf = "0.3.2"
 rubato = "0.12.0"
-strum = { version = "0.24.1", features = [
-    "strum_macros",
-] }
+strum = { version = "0.24.1", features = ["strum_macros"] }
 strum_macros = "0.24.3"
 topological-sort = "0.2.2"
 wasm-timer = "0.2.5"
@@ -37,14 +33,10 @@ console_error_panic_hook = "0.1.7"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
 version = "0.3.64"
-features = [
-    "Document",
-]
+features = ["Document"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.cpal]
-features = [
-    "wasm-bindgen",
-]
+features = ["wasm-bindgen"]
 version = "0.15.2"
 
 [dependencies.symphonia]
@@ -54,10 +46,7 @@ features = ["mp3"]
 [dependencies.eframe]
 version = "0.22.0"
 default-features = false
-features = [
-    "default_fonts",
-    "glow",
-]
+features = ["default_fonts", "glow"]
 
 [dependencies.uuid]
 version = "1.3.0"
