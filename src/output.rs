@@ -93,14 +93,16 @@ impl StreamInstance {
         self.config.channels
     }
 
-    pub fn push_frame(&mut self, value: Frame) -> Result<(), Frame> {
-        let ampl = if self.muted || self.protection {
-            self.damper.frame(0.0)
-        } else {
-            self.damper.frame(self.volume)
-        };
-
-        self.producer.push(value * ampl)
+    pub fn push_iter(&mut self, iter: impl Iterator<Item = Frame>) {
+        let mut map = iter.map(|frame| {
+            let ampl = if self.muted || self.protection {
+                self.damper.frame(0.0)
+            } else {
+                self.damper.frame(self.volume)
+            };
+            frame * ampl
+        });
+        self.producer.push_iter(&mut map);
     }
 
     fn show(&mut self, ui: &mut Ui) {

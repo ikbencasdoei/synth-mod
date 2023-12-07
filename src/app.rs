@@ -109,22 +109,22 @@ impl App {
         puffin::profile_function!();
 
         if let Some(instance) = self.output.instance_mut() {
-            let amount = instance.free_len();
+            let outputs = self
+                .rack
+                .process_amount(instance.sample_rate(), instance.free_len())
+                .into_iter()
+                .map(|frames| {
+                    let mut mixed = Frame::ZERO;
 
-            let outputs = self.rack.process_amount(instance.sample_rate(), amount);
-
-            for i in 0..amount {
-                let mut mixed = Frame::ZERO;
-                if let Some(frames) = outputs.get(i) {
-                    for &frame in frames {
+                    for frame in frames {
                         mixed += frame;
                     }
-                }
 
-                instance
-                    .push_frame(mixed)
-                    .expect("producer should not be full");
-            }
+                    mixed
+                })
+                .collect::<Vec<_>>();
+
+            instance.push_iter(outputs.into_iter());
         } else {
             let samples =
                 (self.output.sample_rate_or_default() as f32 * delta.as_secs_f32()) as usize;
