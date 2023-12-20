@@ -5,7 +5,6 @@ use eframe::{
 use egui_plot::{Legend, Line, Plot};
 
 use crate::{
-    frame::Frame,
     module::{Input, Module, ModuleDescription, Port, PortDescription},
     rack::rack::{ProcessContext, ShowContext},
 };
@@ -82,10 +81,7 @@ impl Module for Scope {
     fn describe() -> ModuleDescription<Self> {
         ModuleDescription::default()
             .name("📈 Scope")
-            .port(
-                PortDescription::<ScopeInput>::input()
-                    .conversion(|frame: Frame| frame.as_f32_mono()),
-            )
+            .port(PortDescription::<ScopeInput>::input())
             .port(PortDescription::<ScopeInput>::input())
     }
 

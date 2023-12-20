@@ -8,7 +8,7 @@ use dyn_clone::DynClone;
 use eframe::{self, egui::Ui};
 
 use crate::{
-    io::{ConnectResult, ConnectResultErr, Conversion, PortHandle},
+    io::{ConnectResult, ConnectResultErr, PortHandle},
     rack::rack::{ProcessContext, ShowContext},
 };
 
@@ -51,13 +51,6 @@ impl ModuleDescriptionDyn {
             inputs: description.inputs,
             outputs: description.outputs,
         }
-    }
-
-    pub fn get_conversions(&self) -> Vec<&Conversion> {
-        self.inputs
-            .iter()
-            .flat_map(|input| input.conversions.iter())
-            .collect()
     }
 }
 
@@ -168,16 +161,6 @@ impl Clone for Box<dyn InputClosureValue> {
     }
 }
 
-pub trait ConversionClosure: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone + 'static {}
-
-impl<F: Fn(Box<dyn Any>) -> Box<dyn Any> + DynClone + 'static> ConversionClosure for F {}
-
-impl Clone for Box<dyn ConversionClosure> {
-    fn clone(&self) -> Self {
-        dyn_clone::clone_box(&**self)
-    }
-}
-
 #[derive(Clone)]
 pub struct PortDescriptionDyn {
     pub name: &'static str,
@@ -186,7 +169,6 @@ pub struct PortDescriptionDyn {
     pub id: PortId,
     pub closure_edit: Option<Box<dyn InputClosureEdit>>,
     pub closure_value: Option<Box<dyn InputClosureValue>>,
-    pub conversions: Vec<Conversion>,
 }
 
 impl PortDescriptionDyn {
@@ -198,7 +180,6 @@ impl PortDescriptionDyn {
             id: P::id(),
             closure_edit: description.closure_edit,
             closure_value: description.closure_value,
-            conversions: description.conversions,
         }
     }
 }
@@ -207,7 +188,6 @@ pub struct PortDescription<P> {
     port_type: PortType,
     closure_edit: Option<Box<dyn InputClosureEdit>>,
     closure_value: Option<Box<dyn InputClosureValue>>,
-    conversions: Vec<Conversion>,
     phantom: PhantomData<P>,
 }
 
@@ -231,7 +211,6 @@ impl<P: Port> PortDescription<P> {
                 let value = ctx.get_input::<P>(handle);
                 value.to_string()
             })),
-            conversions: Vec::new(),
             phantom: PhantomData,
         }
     }
@@ -241,18 +220,8 @@ impl<P: Port> PortDescription<P> {
             port_type: PortType::Output,
             closure_edit: None,
             closure_value: None,
-            conversions: Vec::new(),
             phantom: PhantomData,
         }
-    }
-
-    pub fn conversion<I: PortValueBoxed + Clone>(
-        mut self,
-        closure: impl Fn(I) -> P::Type + Clone + 'static,
-    ) -> Self {
-        let conversion = Conversion::new_input(P::id(), closure);
-        self.conversions.push(conversion.unwrap());
-        self
     }
 
     pub fn into_dyn(self) -> PortDescriptionDyn {

@@ -1,24 +1,22 @@
-use std::any::{Any, TypeId};
+use std::any::Any;
 
 use ahash::{HashMap, HashMapExt, HashSet, HashSetExt};
 use topological_sort::TopologicalSort;
 
 use crate::{
     instance::instance::InstanceHandle,
-    module::{ConversionClosure, Input, Port, PortId, PortValueBoxed},
+    module::{Input, Port, PortId, PortValueBoxed},
 };
 
 #[derive(Clone, Copy, Debug)]
 pub enum ConnectResultWarn {
     Replace(PortHandle, PortHandle),
-    Conversion,
 }
 
 impl ConnectResultWarn {
     pub fn as_str(&self) -> &'static str {
         match self {
             ConnectResultWarn::Replace(..) => "replace",
-            ConnectResultWarn::Conversion => "conversion",
         }
     }
 }
@@ -60,7 +58,6 @@ impl ConnectResult {
 pub struct Io {
     inputs: HashMap<PortHandle, Box<dyn PortValueBoxed>>,
     connections: HashMap<PortHandle, HashSet<PortHandle>>,
-    conversions: HashMap<ConversionId, Box<dyn ConversionClosure>>,
     processing_order: Vec<Vec<InstanceHandle>>,
 }
 
@@ -75,45 +72,14 @@ impl Io {
         self.inputs.insert(port, value);
     }
 
-    /// Tries to get the input data in the correct type either directly or by converting it.
+    /// Tries to get the input data.
     fn try_get_input<I: Input>(&self, instance: InstanceHandle) -> Option<I::Type> {
         let boxed = self.get_input_dyn(PortHandle::new(I::id(), instance))?;
-
-        if let Some(result) = {
-            let any = &*boxed as &dyn Any;
-            any.downcast_ref::<I::Type>()
-        } {
-            Some(result.clone())
-        } else {
-            Some(self.try_convert::<I>(boxed).expect("should have this"))
-        }
+        let any = &*boxed as &dyn Any;
+        any.downcast_ref::<I::Type>().cloned()
     }
 
-    /// Tries to convert the data if an conversion exists.
-    fn try_convert<I: Input>(&self, boxed: Box<dyn PortValueBoxed>) -> Option<I::Type> {
-        let conversion = self.get_conversion::<I>((*boxed).type_id())?;
-        let converted: Box<dyn Any> = (conversion)(boxed);
-        let any = &*converted;
-        Some(
-            any.downcast_ref::<I::Type>()
-                .expect("should be correct type")
-                .clone(),
-        )
-    }
-
-    fn get_conversion<I: Input>(&self, from_type: TypeId) -> Option<&Box<dyn ConversionClosure>> {
-        let id = I::id();
-        let conversion_id = ConversionId {
-            from_type,
-            to_type: id.value_type,
-            to_port: Some(id),
-        };
-        self.conversions
-            .get(&conversion_id)
-            .or_else(|| self.conversions.get(&conversion_id.into_general()))
-    }
-
-    /// Gets input data in correct type either directly, converting it or a default value.
+    /// Gets input data or default value.
     pub fn get_input<I: Input>(&self, instance: InstanceHandle) -> I::Type {
         if let Some(value) = self.try_get_input::<I>(instance) {
             value
@@ -162,17 +128,7 @@ impl Io {
     }
 
     pub fn can_connect(&self, from: PortHandle, to: PortHandle) -> ConnectResult {
-        let mut result = from.is_compatible(to);
-
-        if let ConnectResult::Err(ConnectResultErr::InCompatible) = result {
-            let conversion_id = ConversionId::from_ports(from, to);
-            if self.conversions.contains_key(&conversion_id)
-                || self.conversions.contains_key(&conversion_id.into_general())
-            {
-                result = ConnectResult::Warn(ConnectResultWarn::Conversion);
-            }
-        }
-
+        let result = from.is_compatible(to);
         if let ConnectResult::Ok | ConnectResult::Warn(_) = result {
             if let Some(connection) = self.input_connection(to) {
                 ConnectResult::Warn(ConnectResultWarn::Replace(connection, to))
@@ -220,10 +176,6 @@ impl Io {
         for port in self.instance_ports(instance) {
             self.clear_port(port)
         }
-    }
-
-    pub fn add_conversion(&mut self, conversion: Conversion) {
-        self.conversions.insert(conversion.id, conversion.closure);
     }
 
     pub fn get_instances_dependencies(&self) -> HashMap<InstanceHandle, HashSet<InstanceHandle>> {
@@ -297,76 +249,6 @@ impl PortHandle {
             ConnectResult::Err(ConnectResultErr::SameInstance)
         } else {
             self.id.is_compatible(other.id)
-        }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct ConversionId {
-    pub from_type: TypeId,
-    pub to_type: TypeId,
-    pub to_port: Option<PortId>,
-}
-
-impl ConversionId {
-    pub fn from_ports(from: PortHandle, to: PortHandle) -> Self {
-        Self {
-            from_type: from.id.value_type,
-            to_type: to.id.value_type,
-            to_port: Some(to.id),
-        }
-    }
-
-    pub fn into_general(self) -> Self {
-        Self {
-            from_type: self.from_type,
-            to_type: self.to_type,
-            to_port: None,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Conversion {
-    pub id: ConversionId,
-    closure: Box<dyn ConversionClosure>,
-}
-
-impl Conversion {
-    pub fn new_input<I: PortValueBoxed + Clone, O: PortValueBoxed>(
-        port: PortId,
-        closure: impl Fn(I) -> O + Clone + 'static,
-    ) -> Option<Self> {
-        if TypeId::of::<O>() != port.value_type {
-            return None;
-        }
-
-        Some(Self {
-            id: ConversionId {
-                from_type: TypeId::of::<I>(),
-                to_type: port.value_type,
-                to_port: Some(port),
-            },
-            closure: Box::new(move |boxed: Box<dyn Any>| {
-                let any = &*boxed as &dyn Any;
-                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
-            }),
-        })
-    }
-
-    pub fn new_type<I: PortValueBoxed + Clone, O: PortValueBoxed>(
-        closure: impl Fn(I) -> O + Clone + 'static,
-    ) -> Self {
-        Self {
-            id: ConversionId {
-                from_type: TypeId::of::<I>(),
-                to_type: TypeId::of::<O>(),
-                to_port: None,
-            },
-            closure: Box::new(move |boxed: Box<dyn Any>| {
-                let any = &*boxed as &dyn Any;
-                Box::new(closure(any.downcast_ref::<I>().unwrap().clone()))
-            }),
         }
     }
 }

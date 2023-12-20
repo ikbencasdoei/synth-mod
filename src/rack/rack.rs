@@ -24,7 +24,6 @@ use crate::{
         audio::Audio, filter::Filter, keyboard::Keyboard, noise::Noise, ops::Operation,
         oscillator::Oscillator, scope::Scope, value::Value,
     },
-    types::{Type, TypeDefinitionDyn},
 };
 
 #[derive(Clone)]
@@ -93,7 +92,6 @@ pub struct Rack {
     pub instances: HashMap<InstanceHandle, Instance>,
     panels: Vec<Panel>,
     pub modules: Vec<ModuleDescriptionDyn>,
-    types: Vec<TypeDefinitionDyn>,
     pub io: Io,
     sender: Sender<Frame>,
     receiver: Receiver<Frame>,
@@ -107,15 +105,10 @@ impl Default for Rack {
             instances: Default::default(),
             panels: Vec::new(),
             modules: Vec::new(),
-            types: Vec::new(),
             io: Io::default(),
             sender,
             receiver,
         };
-
-        new.init_type::<f32>();
-        new.init_type::<bool>();
-        new.init_type::<Frame>();
 
         new.init_module::<Oscillator>();
         new.init_module::<Audio>();
@@ -133,22 +126,8 @@ impl Default for Rack {
 }
 
 impl Rack {
-    fn init_type<T: Type>(&mut self) {
-        let definition = T::define().into_dyn();
-
-        for conversion in definition.conversions.iter() {
-            self.io.add_conversion(conversion.clone())
-        }
-
-        self.types.push(definition)
-    }
-
     fn init_module<T: Module>(&mut self) {
         let def = T::describe().into_dyn();
-
-        for conversion in def.get_conversions() {
-            self.io.add_conversion(conversion.clone())
-        }
 
         self.modules.push(def)
     }
