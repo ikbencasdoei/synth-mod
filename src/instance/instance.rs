@@ -3,10 +3,9 @@ use std::{any::Any, marker::PhantomData, ops::Index};
 use ahash::{HashMap, HashMapExt};
 use eframe::{
     egui::{self, Sense, Ui},
-    epaint::{Color32, Hsva},
+    epaint::Hsva,
 };
 use indexmap::IndexMap;
-use rand::Rng;
 use uuid::Uuid;
 
 use super::port::{PortInstance, PortResponse};
@@ -14,6 +13,7 @@ use crate::{
     io::PortHandle,
     module::{Module, ModuleDescriptionDyn},
     rack::rack::ShowContext,
+    util::random_color,
 };
 
 /// Holds an instance of a [`Module`].
@@ -23,7 +23,7 @@ pub struct Instance {
     pub handle: InstanceHandle,
     pub inputs: IndexMap<PortHandle, PortInstance>,
     pub outputs: IndexMap<PortHandle, PortInstance>,
-    handle_color: Color32,
+    handle_color: Hsva,
 }
 
 impl Instance {
@@ -58,7 +58,7 @@ impl Instance {
             handle,
             inputs,
             outputs,
-            handle_color: Self::random_color(),
+            handle_color: random_color(),
         }
     }
 
@@ -97,7 +97,7 @@ impl Instance {
             );
 
             if handle_response.clicked() {
-                self.handle_color = Self::random_color()
+                self.handle_color = random_color()
             }
 
             ui.menu_button("🗑", |ui| {
@@ -127,17 +127,6 @@ impl Instance {
         ui.separator();
 
         response
-    }
-
-    /// Generates a random color that should be readable on a dark background.
-    fn random_color() -> Color32 {
-        Hsva::new(
-            rand::random(),
-            rand::thread_rng().gen_range(0.5..=1.0),
-            rand::thread_rng().gen_range(0.3..=1.0),
-            1.0,
-        )
-        .into()
     }
 }
 

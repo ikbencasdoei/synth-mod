@@ -9,6 +9,7 @@ use crate::{
     io::PortHandle,
     module::{PortDescriptionDyn, PortType},
     rack::rack::ShowContext,
+    util::random_color,
 };
 
 /// Holds an instance of a [`crate::module::Port`]
@@ -17,6 +18,7 @@ pub struct PortInstance {
     dragging: bool,
     pub handle: PortHandle,
     last_value: f32,
+    color: Hsva,
 }
 
 impl PortInstance {
@@ -26,6 +28,7 @@ impl PortInstance {
             dragging: false,
             handle: PortHandle::new(description.id, instance),
             last_value: 0.0,
+            color: random_color(),
         }
     }
 
@@ -186,6 +189,7 @@ pub struct PortResponse {
     pub released: bool,
     pub hovered: bool,
     pub handle: PortHandle,
+    pub color: Hsva,
 }
 
 impl PortResponse {
@@ -197,6 +201,7 @@ impl PortResponse {
             released: false,
             hovered: false,
             handle: port.handle,
+            color: port.color,
         }
     }
 }

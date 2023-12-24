@@ -1,7 +1,7 @@
 use ahash::HashMap;
 use eframe::{
     egui::{self, Id, LayerId, Order, Ui},
-    epaint::{Color32, Hsva, Pos2, QuadraticBezierShape, Rgba, Shape, Stroke},
+    epaint::{Color32, Pos2, QuadraticBezierShape, Rgba, Shape, Stroke},
 };
 
 use super::rack::Rack;
@@ -58,11 +58,14 @@ impl RackResponse {
                 let from_port_response = from_response.get_port_response(from).unwrap();
                 let to_port_response = to_response.get_port_response(to).unwrap();
 
+                let mut color = to_port_response.color;
+                color.a = 0.1;
+
                 draw_rope(
                     from_port_response.position,
                     to_port_response.position,
                     ui,
-                    Stroke::new(2.0, Hsva::new(0.0, 0.0, 1.0, 0.1)),
+                    Stroke::new(2.0, color),
                 );
             }
         }
