@@ -309,7 +309,7 @@ impl Module for File {
                     Slider::new(&mut seek, 0..=self.buffer.len().max(1)).show_value(false),
                 );
 
-                if response.drag_released() {
+                if response.drag_stopped() {
                     self.seek = seek;
                 }
             });

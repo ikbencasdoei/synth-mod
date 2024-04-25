@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, write};
 
 use eframe::{
     egui::{self, style::Widgets, Layout, Ui},
@@ -202,7 +202,7 @@ impl Module for Keyboard {
                 )
             });
 
-        if !ui.memory(|memory| memory.is_anything_being_dragged()) {
+        if !ui.ctx().dragged_id().is_some() {
             self.pressed = None;
         }
     }

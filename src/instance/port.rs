@@ -72,7 +72,7 @@ impl PortInstance {
             }
         }
 
-        if !ui.memory(|memory| memory.is_anything_being_dragged()) && self.dragging {
+        if !ui.ctx().dragged_id().is_some() && self.dragging {
             self.dragging = false;
             response.released = true;
         }

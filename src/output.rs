@@ -11,11 +11,15 @@ use eframe::{
     egui::{self, RichText, Ui},
     epaint::Color32,
 };
-use ringbuf::{HeapRb, Producer};
+use ringbuf::{
+    storage::Heap,
+    traits::{Consumer, Observer, Producer, Split},
+    CachingProd, HeapRb, SharedRb,
+};
 
 use crate::{damper::LinearDamper, frame::Frame};
 
-type RingProducer = Producer<Frame, Arc<HeapRb<Frame>>>;
+type RingProducer = CachingProd<Arc<SharedRb<Heap<Frame>>>>;
 
 /// Instance of the application's audio output.
 pub struct StreamInstance {
@@ -48,7 +52,7 @@ impl StreamInstance {
                 &config,
                 move |data: &mut [f32], _| {
                     for chunk in data.iter_mut().array_chunks::<2>() {
-                        let (a, b) = consumer.pop().unwrap_or_default().as_f32_tuple();
+                        let (a, b) = consumer.try_pop().unwrap_or_default().as_f32_tuple();
                         *chunk[0] = a;
                         *chunk[1] = b;
                     }
@@ -82,7 +86,7 @@ impl StreamInstance {
     }
 
     pub fn free_len(&self) -> usize {
-        self.producer.free_len()
+        self.producer.vacant_len()
     }
 
     pub fn sample_rate(&self) -> u32 {
@@ -128,7 +132,7 @@ impl StreamInstance {
         ui.label(RichText::new(format!("{}", self.channels())).monospace())
             .on_hover_text_at_pointer("channels");
 
-        if self.producer.free_len() > self.damper.cutoff_samples() as usize {
+        if self.producer.vacant_len() > self.damper.cutoff_samples() as usize {
             self.protection = true;
             ui.separator();
             ui.label(RichText::new("⚠ cant keep up!").color(Color32::GOLD));
