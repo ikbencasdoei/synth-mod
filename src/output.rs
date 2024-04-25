@@ -33,15 +33,15 @@ pub struct StreamInstance {
     protection: bool,
 }
 
-impl StreamInstance {
-    fn ringbuf_size(config: &StreamConfig, duration: Duration) -> usize {
-        (config.sample_rate.0 as f32 * duration.as_secs_f32()) as usize
-    }
+fn ringbuf_size(config: &StreamConfig, duration: Duration) -> usize {
+    (config.sample_rate.0 as f32 * duration.as_secs_f32()) as usize
+}
 
+impl StreamInstance {
     fn new(device: Device, config: StreamConfig) -> Option<Self> {
         let (producer, mut consumer) = {
             let duration = Duration::from_secs_f32(0.15);
-            let rb = HeapRb::<Frame>::new(Self::ringbuf_size(&config, duration));
+            let rb = HeapRb::<Frame>::new(ringbuf_size(&config, duration));
             rb.split()
         };
 
@@ -147,23 +147,23 @@ pub struct Output {
     pub instance: Option<StreamInstance>,
 }
 
+fn fetch_device() -> Option<Device> {
+    let host = cpal::default_host();
+    host.default_output_device()
+}
+
+fn fetch_stream_config(device: &Device) -> Option<StreamConfig> {
+    Some(
+        device
+            .supported_output_configs()
+            .ok()?
+            .next()?
+            .with_max_sample_rate()
+            .config(),
+    )
+}
+
 impl Output {
-    fn fetch_device() -> Option<Device> {
-        let host = cpal::default_host();
-        host.default_output_device()
-    }
-
-    fn fetch_stream_config(device: &Device) -> Option<StreamConfig> {
-        Some(
-            device
-                .supported_output_configs()
-                .ok()?
-                .next()?
-                .with_max_sample_rate()
-                .config(),
-        )
-    }
-
     pub fn new() -> Self {
         let mut new = Self { instance: None };
 
@@ -173,8 +173,8 @@ impl Output {
     }
 
     fn init_instance(&mut self) -> Option<&mut StreamInstance> {
-        let device = Self::fetch_device()?;
-        let config = Self::fetch_stream_config(&device)?;
+        let device = fetch_device()?;
+        let config = fetch_stream_config(&device)?;
 
         self.instance = StreamInstance::new(device, config);
 
