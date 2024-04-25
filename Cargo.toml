@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Cas Brugman <casbrugman@hotmail.nl>"]
 
 [dependencies]
-ahash = "0.8.3"
+ahash = "0.8.11"
 biquad = "0.4.2"
 cpal = "0.15.2"
 dyn-clone = "1.0.11"
