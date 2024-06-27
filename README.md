@@ -6,7 +6,7 @@ A virtual [modular synthesizer](https://en.wikipedia.org/wiki/Modular_synthesize
 I was interested in sound production so I made this.
 
 # Features
-At this stage the base has only just been laid and the capabilities are very limited. Some of the available features include:
+The groundwork has barely been completed, and the functionality remain limited at this point. Some of the available features include:
 - Connect together any number of modules.
 - Generate all kinds of waves.
 - Listen to the waves (native sample rate, mono or stereo).
